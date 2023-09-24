@@ -2,7 +2,7 @@
 
 ## Index
 - Notes of past team's capstone report
-- Research on OpenAI Gym
+- Research on Gymnasium
 
 
 ## Notes of past team's capstone report
@@ -31,4 +31,14 @@
 - They originally experienced with reinforcement learning strategies such as deep Q-networks, but abandoned it due to reward sparsity in most environments.
   - We will be focusing on getting RL strategies to work for this problem.
 
-## OpenAI Gym Research
+## Gymnasium Research
+- Potentially use friend or foe Q-learning with multi-agent reinforcement learning
+  - Each agent optimizes it's own Q function
+- Doesn't seem like there is a standarized interface for multi-agent RL in gymnasium
+  - However we can still build a gym that supports this
+- Farama Foundation also has "PettingZoo", which is built for multi-agent reinforcement learning
+  - https://pettingzoo.farama.org/index.html
+- Open AI created Multi-Agent Deep Deterministic Policy Gradient (MADDPG)
+  - Can support adversaries in the algorithm
+  - Decentralized agents learn a centralized critic based on the observations and actions of all agents
+  - We can try to do something similar? Except by implementing communication graph functionality?
