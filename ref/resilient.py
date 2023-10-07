@@ -24,6 +24,9 @@ class simulation_config:
 
 def action_select_matrix(dim_action_list: List[int]) -> np.ndarray:
     '''Given the dim of each agent's action return the action select matrix, i.e., the R matrix'''
+    ## HP: Is this the same R matrix in Step 3 of the proposed algorithm?
+    ## HP: The line below assumes that each agent can have variable number of actions, but when we look at the code, it seems
+    ###### like there are only 2 actions for every agent
     dim_action = sum(dim_action_list)
     num_agents = len(dim_action_list)
     dim_state = dim_action * num_agents
@@ -37,10 +40,13 @@ def action_select_matrix(dim_action_list: List[int]) -> np.ndarray:
 
     return mtx
 
-def action_mask(dim_action_list: List[int]) -> np.ndarray:
-    '''Returns a matrix that sets the estimate components to 0'''
-    mtx = action_select_matrix(dim_action_list)
-    return mtx.transpose().dot(mtx)
+## HP: This function is never used !?
+# def action_mask(dim_action_list: List[int]) -> np.ndarray:
+#     '''Returns a matrix that sets the estimate components to 0'''
+#     mtx = action_select_matrix(dim_action_list)
+
+#     ## HP: I understand we need transpose as per step 3, but why a dot with itself !?
+#     return mtx.transpose().dot(mtx)
 
 def save_plot(figure, name):
     '''Saves the figure as a pdf'''
@@ -68,32 +74,50 @@ class PlotErrorFigure(object):
 class Resilient:
     """Simulation for the resilient algorithm"""
     def __init__(self, sim_config, grid_width, random_agents=None, constant_agents=None, l_inf_ball = 1, D = 1, corner_size = 1):
-        self.sim_config = sim_config        
+        ## This is just the data class simulation_config, with info about step sizes, iterations etc.
+        self.sim_config = sim_config   
+             
+        ## Assuming a square formation, N = grid_width ** 2
         self.grid_width = grid_width
+
+        ## HP: What is corner size?
         self.corner_size = corner_size
 
+        ## HP: What are the two actions it can perform !?
         self.dim_action_i = 2
+
+        ## HP: What is N here, number of agents? Why do we cut corners here?
         self.N = grid_width**2 - 4*corner_size**2
-        self.dim_action_list = self.dim_action_i * np.ones(self.N, dtype=int)
-        self.dim_action = self.dim_action_i * self.N
-        self.dim_state = self.N * self.dim_action
+
+        self.dim_action_list = self.dim_action_i * np.ones(self.N, dtype=int) # [2, 2, 2, .. N times]
+
+        self.dim_action = self.dim_action_i * self.N # 2*N
+
+        self.dim_state = self.N * self.dim_action # 2 * N^2
+
         self.random_agents = random_agents if random_agents else set()
         self.constant_agents = constant_agents if constant_agents else set()
 
+        ## This is the same D in the D-local set discussed in the paper
         self.D = D
 
+        ## HP: What is 1_inf_ball, how is Gc structured !?
         self.Gc = irg.grid_l_inf_to_adj_matrix(grid_width, l_inf_ball)
         self.corners = irg.get_corners(self.Gc, corner_size)
         self.Gc = irg.remove_nodes_from_adj_matrix(self.Gc, self.corners)
         self.Go = self.Gc + np.eye(self.N, dtype=int)
         self.adj_list_gc = irg.adj_matrix_to_adj_in_set(self.Gc, self_loop=False)
 
+        ## Here we build the R matrix as described in Step 3 of the paper
         self.R = action_select_matrix(self.dim_action_list)
         self.A, self.b = self.get_gradient()
 
+        ## HP: For god's sake I need more documentation/comments!! What is F!?
         self.F = block_diag(*[self.A[2*i:2*(i+1),:] for i in range(self.N)])
         self.RF = self.R.transpose().dot(self.F)
         self.RB = self.R.transpose().dot(self.b)
+
+        ## HP: What is NE here !?
         self.NE = -np.linalg.inv(self.A).dot(self.b)
 
         self.example = 'position_plot'
@@ -102,6 +126,7 @@ class Resilient:
         ''' Block diag the matrix A to create F '''
         answer = np.zeros([self.dim_action, self.dim_state])
 
+        ## HP: What is this !?
         for i in range(self.N):
             answer[self.dim_action_i*i:self.dim_action_i*(i+1),self.dim_action*i:self.dim_action*(i+1)] = self.A[self.dim_action_i*i:self.dim_action_i*(i+1),:]
 
@@ -116,13 +141,18 @@ class Resilient:
         grad_average = ((1/self.N)**2)*np.kron(np.ones([self.N,self.N]),np.eye(self.dim_action_i))
         A = grad_average + grad_rel_position
 
+        # L: Left, R: Right, U: Up, D: Down
         L = np.array([irg.grid_node_has_left(self.grid_width, self.corner_size)]).transpose()
         R = np.array([irg.grid_node_has_right(self.grid_width, self.corner_size)]).transpose()
         U = np.array([irg.grid_node_has_up(self.grid_width, self.corner_size)]).transpose()
         D = np.array([irg.grid_node_has_down(self.grid_width, self.corner_size)]).transpose()
 
+        # Change in X is Right - Left
         cost_x_rel = R - L
+
+        # Change in Y is Up - Down
         cost_y_rel = U - D
+
         b = np.kron(cost_x_rel, np.array([[1],[0]])) + np.kron(cost_y_rel, np.array([[0],[1]]))
 
         return A, b
@@ -164,16 +194,25 @@ class Resilient:
         return average
 
     def filter_communicated_message(self, state_y):
-        state_v = np.zeros([self.dim_state,1])
+        state_v = np.zeros([self.dim_state,1]) # [[0], [0], [0], ... 2 N^2 times], dim_state is 2N^2
+        # The state is organized as follows:
+        # [[a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent 1's estimate
+        #  [a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent 2's estimate
+        #  . 
+        #  . 
+        #  . 
+        #  N times                                                                         - This is agent n's estimate]
 
         for agent_i in range(self.N):
             for state_j in range(self.N):
                 for component_k in range(self.dim_action_i):
                     offset = self.dim_action_i*state_j+component_k
                     state_index_i = self.dim_action*agent_i + offset
+                    ## If neighbour is in the observation graph, get the true value
                     if self.Go[agent_i, state_j] == 1:
                         state_index_j = self.dim_action*state_j + offset
                         state_v[state_index_i] = state_y[state_index_j,state_j]
+                    ## If neighbour is not in the observation graph, prune extreme D values and estimate
                     else:
                         agent_i_in_messages = [ state_y[self.dim_action*X + offset, agent_i] for X in self.adj_list_gc[agent_i]]
                         state_v[state_index_i] = self.remove_extreme_D_average(agent_i_in_messages, state_y[state_index_i,agent_i])
@@ -185,16 +224,19 @@ class Resilient:
         state_y = np.kron(state_x, np.ones([1,self.N]))
 
         for agent in self.random_agents:
+            ## Type 1: Adversarial agents who add a bit of normal noise
             state_y[agent*dim:(agent + 1)*dim,:] = state_y[agent*dim:(agent + 1)*dim,:] + np.random.normal(0,1,[dim,self.N])
             state_y[agent*dim:(agent + 1)*dim,agent] = state_x[agent*dim:(agent+1)*dim].transpose()[0]
         for agent in self.constant_agents:
+            ## Type 2: Adversarial agents that always give constant signals
             state_y[agent*dim:(agent + 1)*dim,:] = np.ones([dim,self.N])
             state_y[agent*dim:(agent + 1)*dim,agent] = state_x[agent*dim:(agent+1)*dim].transpose()[0]
 
         return state_y
 
     def iterate_algo(self, init_state):
-        state_x = init_state
+        ''' This function is the one that runs the proposed algorithm '''
+        state_x = init_state # [1.26, -3.45, some random shit, ... 2N^2 times]
         print('Compare')
         print(state_x)
         records = [np.linalg.norm(self.NE-self.R.dot(state_x),2)]
@@ -258,7 +300,7 @@ def plot_save_file_data(selected, adversarial):
 
 def main(game, sim_config):
     '''main function to run the examples'''
-    init_state = -7 + 14*np.random.rand(game.dim_state,1)
+    init_state = -7 + 14*np.random.rand(game.dim_state,1) # [1.26, -3.45, some random shit, ... 2N^2 times]
     for i in range(sim_config.num_rounds):
         print(f'Executing round: {i} / {sim_config.num_rounds}')
         err_record, pos_record, last_iter = game.iterate_algo(init_state)
@@ -299,6 +341,8 @@ if __name__ == "__main__":
     sim_config = simulation_config()
     
     selected = [0,1,2,3,4,5,6,7,8,9,10,11]
+
+    ## Why are there no adversial agents LOL !?
     random_agents = []
     constant_agents = []
     adversarial = random_agents + constant_agents
