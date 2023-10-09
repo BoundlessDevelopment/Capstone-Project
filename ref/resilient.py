@@ -24,18 +24,18 @@ class simulation_config:
 
 def action_select_matrix(dim_action_list: List[int]) -> np.ndarray:
     '''Given the dim of each agent's action return the action select matrix, i.e., the R matrix'''
-    ## HP: Is this the same R matrix in Step 3 of the proposed algorithm?
     ## HP: The line below assumes that each agent can have variable number of actions, but when we look at the code, it seems
     ###### like there are only 2 actions for every agent
     dim_action = sum(dim_action_list)
     num_agents = len(dim_action_list)
     dim_state = dim_action * num_agents
 
-    mtx = np.zeros([dim_action, dim_state])
+    ## HP: Why is this matrix so huge and sparse!?
+    mtx = np.zeros([dim_action, dim_state]) ## This is a matrix of size: 2N x 2N^2
 
     row, col = 0, 0
     for dim in dim_action_list:
-        mtx[row:row + dim, col:col + dim] = np.eye(dim)
+        mtx[row:row + dim, col:col + dim] = np.eye(dim) # 2 x 2 matrix
         row, col = row + dim, col + dim + dim_action
 
     return mtx
@@ -76,17 +76,16 @@ class Resilient:
     def __init__(self, sim_config, grid_width, random_agents=None, constant_agents=None, l_inf_ball = 1, D = 1, corner_size = 1):
         ## This is just the data class simulation_config, with info about step sizes, iterations etc.
         self.sim_config = sim_config   
-             
+
         ## Assuming a square formation, N = grid_width ** 2
         self.grid_width = grid_width
 
-        ## HP: What is corner size?
+        ## HP: What is corner size? See paper they have also cut corners
         self.corner_size = corner_size
 
         ## HP: What are the two actions it can perform !?
         self.dim_action_i = 2
 
-        ## HP: What is N here, number of agents? Why do we cut corners here?
         self.N = grid_width**2 - 4*corner_size**2
 
         self.dim_action_list = self.dim_action_i * np.ones(self.N, dtype=int) # [2, 2, 2, .. N times]
@@ -101,15 +100,21 @@ class Resilient:
         ## This is the same D in the D-local set discussed in the paper
         self.D = D
 
-        ## HP: What is 1_inf_ball, how is Gc structured !?
+        ## HP: Gc is made such that there are cross pattern with square corner not connected. See Fig 7 in paper
         self.Gc = irg.grid_l_inf_to_adj_matrix(grid_width, l_inf_ball)
         self.corners = irg.get_corners(self.Gc, corner_size)
         self.Gc = irg.remove_nodes_from_adj_matrix(self.Gc, self.corners)
+
+        ## This basically mean you can observe yourself
+        ## HP: Which agents in Go can talk to each other?
         self.Go = self.Gc + np.eye(self.N, dtype=int)
+
         self.adj_list_gc = irg.adj_matrix_to_adj_in_set(self.Gc, self_loop=False)
 
         ## Here we build the R matrix as described in Step 3 of the paper
         self.R = action_select_matrix(self.dim_action_list)
+
+        ## HP: What is A and b here?
         self.A, self.b = self.get_gradient()
 
         ## HP: For god's sake I need more documentation/comments!! What is F!?
@@ -117,7 +122,7 @@ class Resilient:
         self.RF = self.R.transpose().dot(self.F)
         self.RB = self.R.transpose().dot(self.b)
 
-        ## HP: What is NE here !?
+        ## HP: NE here is Nash Equilibrium, but how is this being computed?
         self.NE = -np.linalg.inv(self.A).dot(self.b)
 
         self.example = 'position_plot'
@@ -196,8 +201,8 @@ class Resilient:
     def filter_communicated_message(self, state_y):
         state_v = np.zeros([self.dim_state,1]) # [[0], [0], [0], ... 2 N^2 times], dim_state is 2N^2
         # The state is organized as follows:
-        # [[a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent 1's estimate
-        #  [a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent 2's estimate
+        # [[a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent a's estimate
+        #  [a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent b's estimate
         #  . 
         #  . 
         #  . 
@@ -251,7 +256,7 @@ class Resilient:
             state_x = state_v - self.sim_config.step_size*(self.RF.dot(state_v)+self.RB)
 
             records.append(np.linalg.norm(self.NE-self.R.dot(state_x),2))
-            pos_records.append(self.R.dot(state_x))
+            pos_records.append(self.R.dot(state_x)) ## The dimension of this matrix is: 2N x 1
 
         return records, pos_records, state_x
 
