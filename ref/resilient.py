@@ -199,7 +199,7 @@ class Resilient:
         return average
 
     def filter_communicated_message(self, state_y):
-        state_v = np.zeros([self.dim_state,1]) # [[0], [0], [0], ... 2 N^2 times], dim_state is 2N^2
+        state_v = np.zeros([self.dim_state,1]) # [[0], [0], [0], ... 2 N^2 times], dim_state is 1 x 2N^2
         # The state is organized as follows:
         # [[a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent a's estimate
         #  [a1], [a2], [b1], [b2], ... N pairs of [x1], [x2], where x are all agents in N, - This is agent b's estimate
@@ -225,8 +225,9 @@ class Resilient:
         return state_v
 
     def adversarial_communication(self, state_x):
-        dim = self.dim_action
-        state_y = np.kron(state_x, np.ones([1,self.N]))
+        dim = self.dim_action # 2N
+        # HP: Why do we make N copies of state_x in state_y!?
+        state_y = np.kron(state_x, np.ones([1,self.N])) # 2N^2 x 1  kp  1 x N =>  2N^2 x N
 
         for agent in self.random_agents:
             ## Type 1: Adversarial agents who add a bit of normal noise
@@ -253,6 +254,8 @@ class Resilient:
             
             state_y = self.adversarial_communication(state_x)
             state_v = self.filter_communicated_message(state_y)
+
+            # HP: What does the below line of code do?
             state_x = state_v - self.sim_config.step_size*(self.RF.dot(state_v)+self.RB)
 
             records.append(np.linalg.norm(self.NE-self.R.dot(state_x),2))
@@ -305,7 +308,7 @@ def plot_save_file_data(selected, adversarial):
 
 def main(game, sim_config):
     '''main function to run the examples'''
-    init_state = -7 + 14*np.random.rand(game.dim_state,1) # [1.26, -3.45, some random shit, ... 2N^2 times]
+    init_state = -7 + 14*np.random.rand(game.dim_state,1) # [[1.26], [-3.45], [some random shit], ... 2N^2 times] - 2N rows and 1 col
     for i in range(sim_config.num_rounds):
         print(f'Executing round: {i} / {sim_config.num_rounds}')
         err_record, pos_record, last_iter = game.iterate_algo(init_state)
@@ -336,6 +339,7 @@ if __name__ == "__main__":
     continue_run = True
     
     if not continue_run:
+        # Never here
         os.remove("error_data.txt")
         os.remove("position_data.txt")
         os.remove("last_state.txt")
@@ -345,7 +349,7 @@ if __name__ == "__main__":
 
     sim_config = simulation_config()
     
-    selected = [0,1,2,3,4,5,6,7,8,9,10,11]
+    selected = [0,1,2,3,4,5,6,7,8,9,10,11] # Just used for plotting
 
     ## Why are there no adversial agents LOL !?
     random_agents = []
