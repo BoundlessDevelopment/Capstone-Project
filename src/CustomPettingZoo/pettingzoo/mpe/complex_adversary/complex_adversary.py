@@ -39,10 +39,8 @@ Adversary action space: `[no_action, move_left, move_right, move_down, move_up]`
 ### Arguments
 
 ``` python
-complex_adversary_v3.env(N=2, max_cycles=25, continuous_actions=False)
+complex_adversary_v1.env(N=2, max_cycles=25, continuous_actions=False)
 ```
-
-
 
 `N`:  number of good agents and landmarks
 
@@ -62,7 +60,7 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 
 
 class raw_env(SimpleEnv, EzPickle):
-    def __init__(self, N=2, max_cycles=25, continuous_actions=False, render_mode=None):
+    def __init__(self, A=1, N=2, max_cycles=25, continuous_actions=False, render_mode=None):
         EzPickle.__init__(
             self,
             N=N,
@@ -80,7 +78,7 @@ class raw_env(SimpleEnv, EzPickle):
             max_cycles=max_cycles,
             continuous_actions=continuous_actions,
         )
-        self.metadata["name"] = "complex_adversary_v3"
+        self.metadata["name"] = "complex_adversary_v1"
 
 
 env = make_env(raw_env)
@@ -92,10 +90,17 @@ class Scenario(BaseScenario):
         world = World()
         # set any world properties first
         world.dim_c = 2
+
+        # By defualt let's have 1 adversarial agent, parameterize this
+        num_adversaries = 1
+
+        # Num of agents: Truthful + Adversarial (Need to implement this)
         num_agents = N + 1
         world.num_agents = num_agents
-        num_adversaries = 1
-        num_landmarks = num_agents - 1
+
+        # Our landmark or targer is origin
+        num_landmarks = 1
+
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -106,6 +111,7 @@ class Scenario(BaseScenario):
             agent.collide = False
             agent.silent = True
             agent.size = 0.15
+
         # add landmarks
         world.landmarks = [Landmark() for i in range(num_landmarks)]
         for i, landmark in enumerate(world.landmarks):
@@ -113,6 +119,7 @@ class Scenario(BaseScenario):
             landmark.collide = False
             landmark.movable = False
             landmark.size = 0.08
+
         return world
 
     def reset_world(self, world, np_random):
@@ -120,22 +127,30 @@ class Scenario(BaseScenario):
         world.agents[0].color = np.array([0.85, 0.35, 0.35])
         for i in range(1, world.num_agents):
             world.agents[i].color = np.array([0.35, 0.35, 0.85])
+
         # random properties for landmarks
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.15, 0.15, 0.15])
-        # set goal landmark
+
+        # set goal landmark - Currently we only have one landmark/target hence that would always be chosen
         goal = np_random.choice(world.landmarks)
         goal.color = np.array([0.15, 0.65, 0.15])
         for agent in world.agents:
             agent.goal_a = goal
+
         # set random initial states
         for agent in world.agents:
             agent.state.p_pos = np_random.uniform(-1, +1, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
+
+        # We want to set definite state for the landmark/target
         for i, landmark in enumerate(world.landmarks):
-            landmark.state.p_pos = np_random.uniform(-1, +1, world.dim_p)
-            landmark.state.p_vel = np.zeros(world.dim_p)
+            landmark.state.p_pos = [0, 0]
+            print("Landmark: ", landmark.state.p_pos)
+            # landmark.state.p_pos = np_random.uniform(-1, +1, world.dim_p)
+            # landmark.state.p_vel = np.zeros(world.dim_p)
+
 
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes

@@ -1,7 +1,7 @@
 from pettingzoo.mpe import complex_adversary_v1
 import time
 
-env = complex_adversary_v1.env(render_mode="human")
+env = complex_adversary_v1.env(N=2, render_mode="human")
 env.reset(seed=42)
 print("This is the new complex adversary")
 
