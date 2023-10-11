@@ -3,7 +3,7 @@ import time
 
 env = complex_adversary_v1.env(N=2, render_mode="human")
 env.reset(seed=42)
-print("This is the new complex adversary")
+print("This is the new custom environment")
 
 for agent in env.agent_iter():
     observation, reward, termination, truncation, info = env.last()
