@@ -265,6 +265,7 @@ class Scenario(BaseScenario):
             entity_color.append(entity.color)
 
         # communication of all other agents
+        # This is where we can add noise for adversarial agents
         other_pos = []
         for other in world.agents:
             if other is agent:
