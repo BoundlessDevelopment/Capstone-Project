@@ -3,9 +3,9 @@ from typing import List
 
 import numpy as np
 
-
 def is_info_robust_graph(graph_com, graph_obs, kappa=1):
     '''returns true if the graphs are kappa robust'''
+    # This is the same as finding R-information robust, as explained in the paper. Here kappa is R
     size, _ = graph_com.shape
 
     for root_i in range(size):
@@ -128,6 +128,7 @@ def remove_rows_from_vector(vector, nodes):
     return vector
 
 def isqrt(n):
+    ## HP: Why!? Just use numpy right!
     '''Computes the integer square root'''
     x = n
     y = (x + 1) // 2
