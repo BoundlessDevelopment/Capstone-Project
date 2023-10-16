@@ -6,15 +6,15 @@ class Drone:
         self.position = position
         self.intended_direction = 0  # -1: left, 0: stay, 1: right
 
-    def calculate_direction(self, other_position, D):
-        # Current objective value
-        current_value = self.position**2 + (abs(self.position - other_position) - D)**2
+    def calculate_direction(self, other_position, D, other_intended_direction=0):
+        # Objective values with the knowledge of the other drone's intended direction
+        current_value = self.position**2 + (abs(self.position - (other_position + other_intended_direction)) - D)**2
 
         # Simulate moving left
-        left_value = (self.position-1)**2 + (abs(self.position-1 - other_position) - D)**2
+        left_value = (self.position-1)**2 + (abs(self.position-1 - (other_position + other_intended_direction)) - D)**2
 
         # Simulate moving right
-        right_value = (self.position+1)**2 + (abs(self.position+1 - other_position) - D)**2
+        right_value = (self.position+1)**2 + (abs(self.position+1 - (other_position + other_intended_direction)) - D)**2
 
         # Choose the direction that minimizes the objective value
         if left_value < current_value and left_value <= right_value:
@@ -26,7 +26,6 @@ class Drone:
 
     def move(self):
         self.position += self.intended_direction
-
 
 def simulate_environment(D):
     # Initialize drones at random positions
@@ -44,9 +43,13 @@ def simulate_environment(D):
         plt.plot([drone1.position], [iteration], 'ro', label='Drone1' if iteration == 1 else "")
         plt.plot([drone2.position], [iteration], 'bo', label='Drone2' if iteration == 1 else "")
 
-        # Drones decide on a direction
+        # Initial decision
         drone1.calculate_direction(drone2.position, D)
         drone2.calculate_direction(drone1.position, D)
+
+        # Recalculate direction after sharing intended directions
+        drone1.calculate_direction(drone2.position, D, drone2.intended_direction)
+        drone2.calculate_direction(drone1.position, D, drone1.intended_direction)
 
         # If neither drone wants to move, break out of loop
         if drone1.intended_direction == 0 and drone2.intended_direction == 0:
