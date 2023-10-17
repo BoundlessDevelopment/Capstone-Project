@@ -7,6 +7,7 @@ class Drone:
     def __init__(self, position=(0,0)):
         self.x, self.y = position
         self.intended_direction = (0, 0)
+        self.current_cost = float('inf')  # Initialize with a high cost
 
     def calculate_direction(self, all_drones, drone_index, D):
         min_value = float('inf')
@@ -25,6 +26,7 @@ class Drone:
                     best_dir = (dx, dy)
 
         self.intended_direction = best_dir
+        self.current_cost = min_value  # Store the cost of the best direction
 
     def move(self):
         self.x += self.intended_direction[0]
@@ -35,7 +37,7 @@ def worker(drone, all_drones, idx, D):
     return drone
 
 def simulate_environment(N, D):
-    drones = [Drone((random.randint(-10,10), random.randint(-10,10))) for _ in range(N)]
+    drones = [Drone((random.randint(-20,20), random.randint(-20,20))) for _ in range(N)]
     iteration = 0
 
     positions_history = []
@@ -43,6 +45,10 @@ def simulate_environment(N, D):
     while True:
         iteration += 1
         print(f"Iteration {iteration}: {[(drone.x, drone.y) for drone in drones]}")
+
+        # Print costs of each drone for the current iteration
+        for idx, drone in enumerate(drones):
+            print(f"Cost for Drone {idx}: {drone.current_cost}")
 
         # Store positions for detecting repetitive patterns
         current_positions = [(drone.x, drone.y) for drone in drones]
