@@ -27,6 +27,7 @@ class Drone:
     def move(self):
         self.position += self.intended_direction
 
+
 def simulate_environment(D):
     # Initialize drones at random positions
     drone1 = Drone(random.randint(-10, 10))
