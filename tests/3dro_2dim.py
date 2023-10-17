@@ -1,7 +1,6 @@
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-import concurrent.futures
 
 class Drone:
     def __init__(self, position=(0,0)):
@@ -12,10 +11,13 @@ class Drone:
     def calculate_direction(self, all_drones, drone_index, D):
         min_value = float('inf')
         best_dir = (0, 0)
+        
+        # Calculate average distance of all drones from the origin
+        avg_distance = sum([np.sqrt(drone.x**2 + drone.y**2) for drone in all_drones]) / len(all_drones)
 
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
-                cost = (self.x + dx)**2 + (self.y + dy)**2  # Distance from origin
+                cost = avg_distance  # Using the average distance for the cost
                 for j, other_drone in enumerate(all_drones):
                     if j != drone_index:
                         dist = np.sqrt((self.x + dx - other_drone.x)**2 + (self.y + dy - other_drone.y)**2)
@@ -32,10 +34,6 @@ class Drone:
         self.x += self.intended_direction[0]
         self.y += self.intended_direction[1]
 
-def worker(drone, all_drones, idx, D):
-    drone.calculate_direction(all_drones, idx, D)
-    return drone
-
 def simulate_environment(N, D):
     drones = [Drone((random.randint(-20,20), random.randint(-20,20))) for _ in range(N)]
     iteration = 0
@@ -45,9 +43,10 @@ def simulate_environment(N, D):
     while True:
         iteration += 1
         print(f"Iteration {iteration}: {[(drone.x, drone.y) for drone in drones]}")
-
-        # Print costs of each drone for the current iteration
+        
+        # Update direction for each drone
         for idx, drone in enumerate(drones):
+            drone.calculate_direction(drones, idx, D)
             print(f"Cost for Drone {idx}: {drone.current_cost}")
 
         # Store positions for detecting repetitive patterns
@@ -57,10 +56,7 @@ def simulate_environment(N, D):
         # Break if the positions repeat
         if positions_history.count(current_positions) > 2:
             break
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            drones = list(executor.map(worker, drones, [drones]*N, range(N), [D]*N))
-
+        
         for drone in drones:
             drone.move()
 
