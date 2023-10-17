@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import concurrent.futures
 
+DISTANCE_TO_ORIGIN_WEIGHT = 10
+
 class Drone:
-    def __init__(self, position=(0,0)):
+    def __init__(self, position=(0.0,0.0)):
         self.x, self.y = position
         self.intended_direction = (0, 0)
         self.current_cost = float('inf')  # Initialize with a high cost
@@ -16,7 +18,7 @@ class Drone:
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 # Calculate average distance of all drones from the origin excluding the current drone and including drone's potential new position
-                cost = 10*(sum([np.sqrt(drone.x**2 + drone.y**2) for i, drone in enumerate(all_drones) if i != drone_index]) + np.sqrt((self.x + dx)**2 + (self.y + dy)**2)) / len(all_drones)
+                cost = DISTANCE_TO_ORIGIN_WEIGHT*(sum([np.sqrt(drone.x**2 + drone.y**2) for i, drone in enumerate(all_drones) if i != drone_index]) + np.sqrt((self.x + dx)**2 + (self.y + dy)**2)) / len(all_drones)
 
                 for j, other_drone in enumerate(all_drones):
                     if j != drone_index:
@@ -37,6 +39,33 @@ class Drone:
 def worker(drone, all_drones, idx, D):
     drone.calculate_direction(all_drones, idx, D)
     return drone
+
+def individual_drone_score(drone, all_drones, drone_index, D):
+    score = sum([np.sqrt(d.x**2 + d.y**2) for d in all_drones]) / len(all_drones)
+    
+    # Sum of squared differences from the desired distances
+    for j, other_drone in enumerate(all_drones):
+        if j != drone_index:
+            dist = np.sqrt((drone.x - other_drone.x)**2 + (drone.y - other_drone.y)**2)
+            score += (dist - D[drone_index][j])**2
+    
+    return score
+
+
+def individual_drone_score(drone, all_drones, drone_index, D):
+    score = 0
+    
+    # Drone's distance from the origin
+    score += np.sqrt(drone.x**2 + drone.y**2)
+    
+    # Sum of squared differences from the desired distances
+    for j, other_drone in enumerate(all_drones):
+        if j != drone_index:
+            dist = np.sqrt((drone.x - other_drone.x)**2 + (drone.y - other_drone.y)**2)
+            score += (dist - D[drone_index][j])**2
+    
+    return score
+
 
 def simulate_environment(N, D):
     drones = [Drone((random.randint(-20,20), random.randint(-20,20))) for _ in range(N)]
@@ -65,6 +94,11 @@ def simulate_environment(N, D):
 
         for drone in drones:
             drone.move()
+
+    # At the end, once the drones converge:
+    for idx, drone in enumerate(drones):
+        drone_score = individual_drone_score(drone, drones, idx, D)
+        print(f"Score for Drone {idx}: {drone_score}")
 
     # Plotting
     plt.figure(figsize=(5,5))
