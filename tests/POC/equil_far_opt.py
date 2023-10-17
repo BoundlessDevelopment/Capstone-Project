@@ -56,7 +56,7 @@ def individual_drone_score(drone, all_drones, drone_index, D):
     score = 0
     
     # Drone's distance from the origin
-    score += np.sqrt(drone.x**2 + drone.y**2)
+    score += sum([np.sqrt(d.x**2 + d.y**2) for d in all_drones]) / len(all_drones)
     
     # Sum of squared differences from the desired distances
     for j, other_drone in enumerate(all_drones):
@@ -68,6 +68,7 @@ def individual_drone_score(drone, all_drones, drone_index, D):
 
 
 def simulate_environment(N, D):
+   # Desired center of the equilateral triangle
     x_center, y_center = 50, 50
 
     # Shifts based on the triangle's centroid
