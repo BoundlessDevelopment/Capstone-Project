@@ -1,6 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import numpy as np
+import concurrent.futures
 
 class Drone:
     def __init__(self, position=(0,0)):
@@ -29,6 +30,10 @@ class Drone:
         self.x += self.intended_direction[0]
         self.y += self.intended_direction[1]
 
+def worker(drone, all_drones, idx, D):
+    drone.calculate_direction(all_drones, idx, D)
+    return drone
+
 def simulate_environment(N, D):
     drones = [Drone((random.randint(-10,10), random.randint(-10,10))) for _ in range(N)]
     iteration = 0
@@ -47,8 +52,8 @@ def simulate_environment(N, D):
         if positions_history.count(current_positions) > 2:
             break
 
-        for idx, drone in enumerate(drones):
-            drone.calculate_direction(drones, idx, D)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            drones = list(executor.map(worker, drones, [drones]*N, range(N), [D]*N))
 
         for drone in drones:
             drone.move()
@@ -71,5 +76,5 @@ N = 3  # Number of drones
 D = [[0, 10, 10], 
      [10, 0, 10], 
      [10, 10, 0]]  # Desired distances between drones
-simulate_environment(N, D)
 
+simulate_environment(N, D)
