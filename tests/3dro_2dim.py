@@ -15,7 +15,9 @@ class Drone:
 
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
-                cost = (self.x + dx)**2 + (self.y + dy)**2  # Distance from origin
+                # Calculate average distance of all drones from the origin excluding the current drone and including drone's potential new position
+                cost = 10*(sum([np.sqrt(drone.x**2 + drone.y**2) for i, drone in enumerate(all_drones) if i != drone_index]) + np.sqrt((self.x + dx)**2 + (self.y + dy)**2)) / len(all_drones)
+
                 for j, other_drone in enumerate(all_drones):
                     if j != drone_index:
                         dist = np.sqrt((self.x + dx - other_drone.x)**2 + (self.y + dy - other_drone.y)**2)
@@ -26,7 +28,7 @@ class Drone:
                     best_dir = (dx, dy)
 
         self.intended_direction = best_dir
-        self.current_cost = min_value  # Store the cost of the best direction
+        self.current_cost = min_value
 
     def move(self):
         self.x += self.intended_direction[0]
@@ -65,7 +67,7 @@ def simulate_environment(N, D):
             drone.move()
 
     # Plotting
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(5,5))
     for iteration, positions in enumerate(positions_history):
         for idx, (x, y) in enumerate(positions):
             color = ['red', 'blue', 'green', 'orange', 'purple', 'brown'][idx % 6]
