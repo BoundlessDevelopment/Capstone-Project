@@ -79,7 +79,7 @@ class nepiada(ParallelEnv):
         Reset needs to initialize the `agents` attribute and must set up the
         environment so that render(), and step() can be called without issues.
         Here it initializes the `num_moves` variable which counts the number of
-        hands that are played.
+        steps taken in the environment.
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
@@ -117,8 +117,7 @@ class nepiada(ParallelEnv):
         observations = observations
         self.state = observations
 
-        # typically there won't be any information in the infos, but there must
-        # still be an entry for each agent
+        # Thanos: Uses infos for communications?
         infos = {agent: {} for agent in self.agents}
 
         if self.render_mode == "human":
