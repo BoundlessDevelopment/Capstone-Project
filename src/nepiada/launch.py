@@ -1,6 +1,10 @@
 import nepiada
 
-env = nepiada.parallel_env(render_mode="human", amount_of_agents=5, grid_size=10)
+from nepiada.utils.config import Config
+
+config = Config()
+
+env = nepiada.parallel_env(render_mode="human", config = config)
 observations, infos = env.reset()
 
 while env.agents:

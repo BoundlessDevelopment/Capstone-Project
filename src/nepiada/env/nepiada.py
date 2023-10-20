@@ -6,14 +6,16 @@ from gymnasium.spaces import Discrete, Box
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
-def parallel_env(amount_of_agents, grid_size):
+from nepiada.utils.config import Config
+
+def parallel_env(config : Config):
     """
     The env function often wraps the environment in wrappers by default.
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
     internal_render_mode = "human"
-    env = raw_env(render_mode=internal_render_mode, amount_of_agents=amount_of_agents, grid_size=grid_size)
+    env = raw_env(render_mode=internal_render_mode, config = config)
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
     # Provides a wide vareity of helpful user errors
@@ -22,22 +24,22 @@ def parallel_env(amount_of_agents, grid_size):
     return env
 
 
-def raw_env(render_mode=None, amount_of_agents=5, grid_size=10):
+def raw_env(render_mode=None, config: Config = Config()):
     """
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     """
-    env = nepiada(render_mode=render_mode, amount_of_agents=amount_of_agents, grid_size=grid_size)
+    env = nepiada(render_mode=render_mode, config = config)
     env = parallel_to_aec(env)
     return env
 
 class nepiada(ParallelEnv):
-    def __init__(self, render_mode=None, amount_of_agents=5, grid_size=10):
+    def __init__(self, render_mode=None, config: Config = Config()):
         """
         Initalizes the environment.
         """
-        # TODO: Need to initialize agents
-        self.possible_agents = [i for i in range(amount_of_agents)]
+        # TODO: Need to initialize agents - currently just adding all agents
+        self.possible_agents = [i for i in range(config.num_good_agents + config.num_adversarial_agents)]
         self.render_mode = render_mode
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
