@@ -51,14 +51,14 @@ class AdversarialNoiseContext():
 
         self._strategy = strategy
 
-    def add_noise(self) -> None:
+    def add_noise(self, data) -> None:
         """
         The Context delegates some work to the Strategy object instead of
         implementing multiple versions of the algorithm on its own.
         """
 
         print(f"Context: Adding {self._strategy.get_name()} noise to the data")
-        result = self._strategy.add_noise()
+        result = self._strategy.add_noise(data)
         return result
 
 
@@ -71,7 +71,7 @@ class uniform_noise(adversarial_noise_strategy):
     """
     def add_noise(self, data):
         data_dim = data.shape
-        return data + np.random.uniform(low=0, high=1, size=[data_dim]) ## TODO: Get the low and high values from config
+        return data + np.random.uniform(low=0, high=1, size=data_dim) ## TODO: Get the low and high values from config
 
     def get_name(self):
         return "Uniform noise"
@@ -81,9 +81,9 @@ class gaussian_noise(adversarial_noise_strategy):
     The algorithm that adds noise to the data from a gaussian distribution.
     A Gaussian distribution is symmetric around the mean. It is also called the bell curve or normal distribution. 
     """
-    def add_noise(self):
+    def add_noise(self, data):
         data_dim = data.shape
-        return data + np.random.normal(loc=0, scale=1, size=[data_dim]) ## TODO: Get the loc and scale values from config
+        return data + np.random.normal(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
 
     def get_name(self):
         return "Gaussian noise"
@@ -93,9 +93,9 @@ class laplacian_noise(adversarial_noise_strategy):
     The algorithm that adds noise to the data from a laplacian distribution.
     A Laplacian distribution is symmetric around the mean, however it is more concentrated near the mean than a gaussian distribution.
     """
-    def add_noise(self):
+    def add_noise(self, data):
         data_dim = data.shape
-        return data + np.random.laplace(loc=0, scale=1, size=[data_dim]) ## TODO: Get the loc and scale values from config
+        return data + np.random.laplace(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
 
     def get_name(self):
         return "Laplacian noise"
@@ -106,12 +106,21 @@ if __name__ == "__main__":
     # The client code picks a concrete strategy and passes it to the context.
     # The client should be aware of the differences between strategies in order
     # to make the right choice.
+    original_data = np.array([1, 2, 3, 4, 5])
+    print("Original data: ", original_data)
 
     context = AdversarialNoiseContext(laplacian_noise())
     print("Client: Strategy is set to laplacian noise.")
-    context.add_noise()
+    print("Data after noise: ", context.add_noise(original_data))
     print()
 
-    print("Client: Strategy is set to gaussian noise.")
+    original_data = np.array([[1, 2, 3, 4, 5], [3.2, 4.5, 6, 7.1, 2.4]])
     context.strategy = gaussian_noise()
-    context.add_noise()
+    print("Client: Strategy is set to gaussian noise.")
+    print("Data after noise: ", context.add_noise(original_data))
+    print()
+
+    original_data = np.array([[1], [2], [3], [4], [5]])
+    context.strategy = uniform_noise()
+    print("Client: Strategy is set to uniform noise.")
+    print("Data after noise: ", context.add_noise(original_data))
