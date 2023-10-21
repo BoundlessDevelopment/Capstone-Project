@@ -1,21 +1,23 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 class adversarial_noise_strategy(ABC):
     """
     The Strategy interface declares operations common to all supported versions
-    of some algorithm.
+    of the supported algorithms.
 
     The Context uses this interface to call the algorithm defined by Concrete
     Strategies.
     """
 
     @abstractmethod
-    def add_noise():    
+    def add_noise(self, data):    
         pass
 
     ## For debug
-    def get_name():
-        return "Not initialized"
+    @abstractmethod
+    def get_name(self):
+        pass
 
 
 class AdversarialNoiseContext():
@@ -67,9 +69,9 @@ class uniform_noise(adversarial_noise_strategy):
     The algorithm that adds noise to the data from a uniform distribution. 
     In a uniform distribution all values are equally likely. 
     """
-    def add_noise(self):
-        #TODO(@HP)
-        pass
+    def add_noise(self, data):
+        data_dim = data.shape
+        return data + np.random.uniform(low=0, high=1, size=[data_dim]) ## TODO: Get the low and high values from config
 
     def get_name(self):
         return "Uniform noise"
@@ -80,8 +82,8 @@ class gaussian_noise(adversarial_noise_strategy):
     A Gaussian distribution is symmetric around the mean. It is also called the bell curve or normal distribution. 
     """
     def add_noise(self):
-        #TODO(@HP)
-        pass
+        data_dim = data.shape
+        return data + np.random.normal(loc=0, scale=1, size=[data_dim]) ## TODO: Get the loc and scale values from config
 
     def get_name(self):
         return "Gaussian noise"
@@ -92,8 +94,8 @@ class laplacian_noise(adversarial_noise_strategy):
     A Laplacian distribution is symmetric around the mean, however it is more concentrated near the mean than a gaussian distribution.
     """
     def add_noise(self):
-        #TODO(@HP)
-        pass
+        data_dim = data.shape
+        return data + np.random.laplace(loc=0, scale=1, size=[data_dim]) ## TODO: Get the loc and scale values from config
 
     def get_name(self):
         return "Laplacian noise"
