@@ -34,6 +34,8 @@ def raw_env(render_mode=None, config: Config = Config()):
     return env
 
 class nepiada(ParallelEnv):
+    metadata = {"render_modes": ["human"], "name": "nepiada_v1"}
+
     def __init__(self, render_mode=None, config: Config = Config()):
         """
         Initalizes the environment.
