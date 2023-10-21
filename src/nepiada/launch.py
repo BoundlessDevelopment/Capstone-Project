@@ -1,10 +1,10 @@
-import nepiada
+import env.nepiada as nepiada
 
-from nepiada.utils.config import Config
+from utils.config import Config
 
 config = Config()
 
-env = nepiada.parallel_env(render_mode="human", config = config)
+env = nepiada.parallel_env(config = config)
 observations, infos = env.reset()
 
 while env.agents:

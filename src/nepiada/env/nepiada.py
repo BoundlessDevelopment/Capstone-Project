@@ -6,7 +6,7 @@ from gymnasium.spaces import Discrete, Box
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
-from nepiada.utils.config import Config
+from utils.config import Config
 
 def parallel_env(config : Config):
     """
