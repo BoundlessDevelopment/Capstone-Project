@@ -39,13 +39,21 @@ class nepiada(ParallelEnv):
 
     def __init__(self, render_mode=None, config: Config = Config()):
         """
-        Initalizes the environment.
+        The init method takes in environment arguments and should define the following attributes:
+        - possible_agents
+        - render_mode
+
+        Note: as of v1.18.1, the action_spaces and observation_spaces attributes are deprecated.
+        Spaces should be defined in the action_space() and observation_space() methods.
+        If these methods are not overridden, spaces will be inferred from self.observation_spaces/action_spaces, raising a warning.
+
+        These attributes should not be changed after initialization.
         """
 
         self.total_agents = config.num_good_agents + config.num_adversarial_agents
-        self.possible_agents = [str(i) for i in range(self.total_agents)]
+        self.possible_agents = ["agent_" + str(i) for i in range(self.total_agents)]
         self.render_mode = render_mode
-        self.observations = np.zeros(self.total_agents)
+        # self.observations = np.zeros(self.total_agents)
 
         # TODO: Need to make a grid and initialize agents - currently just adding all agents
         # grid = make_grid(config.size)
@@ -55,14 +63,17 @@ class nepiada(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        # TODO(thanos): define observation space
-        return Box()
+
+        # Observation space is defined as a N x 2 matrix, where each row corresponds to an agents coordinates.
+        # The first column stores the x coordinate and the second column stores the y coordinate
+        return Box(low=0, high=config.size, shape=(self.total_agents, 2), dtype=np.int_)
 
     # Action space should be defined here.
     # If spaces change over time, remove this line (disable caching).
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         # Discrete movement, either up, down, stay, left or right.
+        # TODO: Make an ENUM for actions
         return Discrete(5)
 
     def render(self):
@@ -75,6 +86,15 @@ class nepiada(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
+
+    def observe(self, agent):
+        """
+        Observe should return the observation of the specified agent. This function
+        should return a sane observation (though not necessarily the most up to date possible)
+        at any time after reset() is called.
+        """
+        # observation of one agent is the previous state of the other
+        return np.array(self.observations[agent])
 
     def close(self):
         """
@@ -97,19 +117,22 @@ class nepiada(ParallelEnv):
 
         # TODO: Reinitialize the grid
 
-        # TODO: Reset observations
-        observations = self.observations
+        # Reset the observations
+        self.observations = {agent: None for agent in self.agents}
 
-        self.infos = {}
-        for agent in self.agents:
-            self.infos[str(agent)] = 0
+        # Reset the rewards
+        self.rewards = {agent: 0 for agent in self.agents}
 
+        # Reset the truncations
+        self.truncations = {agent: False for agent in self.agents}
+
+        self.infos = {agent: {} for agent in self.agents}
         print(set(self.infos.keys()))
         print(set(self.agents))
 
-        self.state = observations
+        self.state = self.observations
 
-        return observations, self.infos
+        return self.observations, self.infos
 
     def step(self, actions):
         """
@@ -126,21 +149,23 @@ class nepiada(ParallelEnv):
             self.agents = []
             return {}, {}, {}, {}, {}
 
-        # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {}
+        # We should update the rewards here, for now, we will just set everything to 0
+        rewards = {agent: 0 for agent in self.agents}
 
         terminations = {agent: False for agent in self.agents}
         self.num_moves += 1
-        truncations = {agent: False for agent in self.agents}
+        env_truncation = self.num_moves >= Config.iterations
+        truncations = {agent: env_truncation for agent in self.agents}
 
         # TODO: Update observation
         observations = self.observations
         self.state = observations
 
         # Thanos: Uses infos for communications? - How? @HP
-        self.infos = {}
-        for agent in self.agents:
-            self.infos[str(agent)] = 0
+        infos = {agent: {} for agent in self.agents}
+
+        # TODO: Need to add information to infos
+
 
         if self.render_mode == "human":
             self.render()
