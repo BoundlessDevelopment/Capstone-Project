@@ -8,7 +8,7 @@ from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
 from utils.config import Config
-from utils.grid import Grid
+from utils.world import World
 
 def parallel_env(config : Config):
     """
@@ -64,7 +64,7 @@ class nepiada(ParallelEnv):
         self.render_mode = render_mode
 
         # TODO: Need to make a grid and initialize agents - currently just adding all agents
-        self.grid = Grid()
+        self.world = World()
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     # If spaces change over time, remove this line (disable caching).
