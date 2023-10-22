@@ -41,6 +41,7 @@ class Drone:
 
 def worker(drone, all_drones, idx, D):
     drone.calculate_direction(all_drones, idx, D)
+    drone.move()  # move the drone after calculation
     return drone
 
 def individual_drone_score(drone, all_drones, drone_index, D):
@@ -57,8 +58,7 @@ def individual_drone_score(drone, all_drones, drone_index, D):
     
     return score
 
-
-def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight=1, epsilon=0.1, plot_results=True):
+def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight=1, epsilon=0.1, verbose=True):
     global DISTANCE_TO_ORIGIN_WEIGHT
     DISTANCE_TO_ORIGIN_WEIGHT = distance_to_origin_weight
     
@@ -77,6 +77,12 @@ def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight
         current_positions = [(drone.x, drone.y) for drone in drones]
         positions_history.append(current_positions)
 
+        # Verbose mode: Print drone locations and costs
+        if verbose:
+            print(f"Iteration {iteration}: {current_positions}")
+            for idx, drone in enumerate(drones):
+                print(f"Cost for Drone {idx}: {individual_drone_score(drone, drones, idx, D)}")
+
         # Break if the positions repeat
         if positions_history.count(current_positions) > 2:
             break
@@ -84,10 +90,7 @@ def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight
         with concurrent.futures.ThreadPoolExecutor() as executor:
             drones = list(executor.map(worker, drones, [drones]*N, range(N), [D]*N))
 
-        for drone in drones:
-            drone.move()
-
-    if plot_results:
+    if verbose:
         # Plotting
         plt.figure(figsize=(5,5))
         for iteration, positions in enumerate(positions_history):

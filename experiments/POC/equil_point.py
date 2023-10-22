@@ -19,7 +19,7 @@ def test_simulation():
         (5, 5 * np.sqrt(3))           # Vertex above the midpoint of the base
     ]
 
-    avg_score = simulate_environment(N, D, initial_positions=optimal_positions, distance_to_origin_weight=1, epsilon=0, plot_results=True)
+    avg_score = simulate_environment(N, D, initial_positions=optimal_positions, distance_to_origin_weight=1, epsilon=0, verbose=True)
     print(f"Average Score: {avg_score}")
 
 if __name__ == "__main__":

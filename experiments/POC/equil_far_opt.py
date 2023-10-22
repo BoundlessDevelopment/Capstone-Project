@@ -25,7 +25,7 @@ def test_simulation():
         (5 + x_shift, 5 * np.sqrt(3) + y_shift)    
     ]
 
-    avg_score = simulate_environment(N, D, initial_positions=optimal_positions, distance_to_origin_weight=10, epsilon=0.0, plot_results=True)
+    avg_score = simulate_environment(N, D, initial_positions=optimal_positions, distance_to_origin_weight=10, epsilon=0.0, verbose=True)
     print(f"Average Score: {avg_score}")
 
 if __name__ == "__main__":

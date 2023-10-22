@@ -38,3 +38,4 @@ For `equil_far`:
 ## Additional Information
 
 The primary source code is located in `drone_simulation.py`, while the testing framework is found in `test_simulation.py`. The `D matrix` outlines the desired final drone configuration. It's essential that this matrix remains symmetric; otherwise, drone pairs might have conflicting objectives and never converge. The "Distance to origin weight" parameter describes its namesake, and "epsilon" determines the likelihood of a drone making a random rather than a greedy move.
+The verbose flag prints out all drone information per iteration and plots them. 
