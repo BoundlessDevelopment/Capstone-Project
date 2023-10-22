@@ -1,4 +1,5 @@
 import functools
+import numpy as np
 
 import gymnasium
 from gymnasium.spaces import Discrete, Box
@@ -40,9 +41,14 @@ class nepiada(ParallelEnv):
         """
         Initalizes the environment.
         """
-        # TODO: Need to initialize agents - currently just adding all agents
-        self.possible_agents = [i for i in range(config.num_good_agents + config.num_adversarial_agents)]
+
+        self.total_agents = config.num_good_agents + config.num_adversarial_agents
+        self.possible_agents = [str(i) for i in range(self.total_agents)]
         self.render_mode = render_mode
+        self.observations = np.zeros(self.total_agents)
+
+        # TODO: Need to make a grid and initialize agents - currently just adding all agents
+        # grid = make_grid(config.size)
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     # If spaces change over time, remove this line (disable caching).
@@ -88,12 +94,22 @@ class nepiada(ParallelEnv):
         """
         self.agents = self.possible_agents[:]
         self.num_moves = 0
+
+        # TODO: Reinitialize the grid
+
         # TODO: Reset observations
-        observations = observations
-        infos = {agent: {} for agent in self.agents}
+        observations = self.observations
+
+        self.infos = {}
+        for agent in self.agents:
+            self.infos[str(agent)] = 0
+
+        print(set(self.infos.keys()))
+        print(set(self.agents))
+
         self.state = observations
 
-        return observations, infos
+        return observations, self.infos
 
     def step(self, actions):
         """
@@ -118,12 +134,15 @@ class nepiada(ParallelEnv):
         truncations = {agent: False for agent in self.agents}
 
         # TODO: Update observation
-        observations = observations
+        observations = self.observations
         self.state = observations
 
-        # Thanos: Uses infos for communications?
-        infos = {agent: {} for agent in self.agents}
+        # Thanos: Uses infos for communications? - How? @HP
+        self.infos = {}
+        for agent in self.agents:
+            self.infos[str(agent)] = 0
 
         if self.render_mode == "human":
             self.render()
+        
         return observations, rewards, terminations, truncations, infos
