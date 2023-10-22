@@ -44,10 +44,6 @@ class nepiada(ParallelEnv):
         - possible_agents
         - render_mode
 
-        Note: as of v1.18.1, the action_spaces and observation_spaces attributes are deprecated.
-        Spaces should be defined in the action_space() and observation_space() methods.
-        If these methods are not overridden, spaces will be inferred from self.observation_spaces/action_spaces, raising a warning.
-
         These attributes should not be changed after initialization.
         """
 
@@ -67,7 +63,6 @@ class nepiada(ParallelEnv):
         self.world = World()
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
-    # If spaces change over time, remove this line (disable caching).
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
@@ -77,7 +72,6 @@ class nepiada(ParallelEnv):
         return Box(low=0, high=config.size, shape=(self.total_agents, 2), dtype=np.int_)
 
     # Action space should be defined here.
-    # If spaces change over time, remove this line (disable caching).
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         # Discrete movement, either up, down, stay, left or right.
