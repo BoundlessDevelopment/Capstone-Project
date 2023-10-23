@@ -1,20 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def compute_adjacency_matrix(all_drones):
-    n = len(all_drones)
-    matrix = [[0] * n for _ in range(n)]
-    for i, drone in enumerate(all_drones):
-        visible = drone.visible_drones(all_drones)
-        for v in visible:
-            j = all_drones.index(v)
-            matrix[i][j] = 1
-    return matrix
+def compute_distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
-def worker(drone, all_drones, idx, D, distance_to_origin_weight, epsilon):
+
+def worker(drone, all_drones, all_beliefs, idx, D, distance_to_origin_weight, epsilon):
+    drone.update_beliefs(all_drones, all_beliefs, idx)
     drone.calculate_direction(all_drones, idx, D, distance_to_origin_weight=distance_to_origin_weight, epsilon=epsilon)
     drone.move()  # move the drone after calculation
     return drone
+
 
 def individual_drone_score(drone, all_drones, drone_index, D):
     score = 0

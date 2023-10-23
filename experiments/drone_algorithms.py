@@ -2,8 +2,9 @@
 
 import random
 import numpy as np
+from utils import compute_distance
 
-def greedy_decision(drone, all_drones, drone_index, D, distance_to_origin_weight=1, epsilon=0.1):
+def greedy_decision(drone, beliefs_positions, drone_index, D, distance_to_origin_weight=1, epsilon=0.1):
     min_value = float('inf')
     best_dir = (0, 0)
 
@@ -14,11 +15,17 @@ def greedy_decision(drone, all_drones, drone_index, D, distance_to_origin_weight
     # Otherwise, use the greedy approach
     for dx in [-1, 0, 1]:
         for dy in [-1, 0, 1]:
-            cost = distance_to_origin_weight*(sum([np.sqrt(d.x**2 + d.y**2) for i, d in enumerate(all_drones) if i != drone_index]) + np.sqrt((drone.x + dx)**2 + (drone.y + dy)**2)) / len(all_drones)
+            new_pos = (drone.x + dx, drone.y + dy)
+            
+            # Average distance to origin for all believed positions (excluding the current drone)
+            avg_distance = sum(compute_distance(pos, (0, 0)) for i, pos in enumerate(beliefs_positions) if i != drone_index) + compute_distance(new_pos, (0, 0))
+            avg_distance /= len(beliefs_positions)
+            
+            cost = distance_to_origin_weight * avg_distance
 
-            for j, other_drone in enumerate(all_drones):
+            for j, other_pos in enumerate(beliefs_positions):
                 if j != drone_index:
-                    dist = np.sqrt((drone.x + dx - other_drone.x)**2 + (drone.y + dy - other_drone.y)**2)
+                    dist = compute_distance(new_pos, other_pos)
                     cost += (dist - D[drone_index][j])**2
 
             if cost < min_value:
