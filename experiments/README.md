@@ -1,41 +1,45 @@
 # Experiments Repository
 
-In this repository, we focus on:
+In this repository, our objectives are to:
 
-- Building the layout of the problem
-- Conducting new experiments
-- Recording observations
+- Construct the layout of the problem.
+- Conduct new experiments.
+- Record observations.
 
-All tasks are initially implemented in simple Python before transitioning to more complex tasks using advanced frameworks.
+All tasks begin with simple Python implementations. As the complexity of the tasks increases, we transition to more sophisticated frameworks.
 
 ## Current Setup
 
-We've established a scenario with **3 drones in a 2-dimensional space**. These drones aim to form an **equilateral triangular formation** with a side length of 10, staying as close to the origin as possible. The final score is derived from the average of all agent scores. This calculation is based on the objective function from Pavel's paper, considering the mean squared cost of each drone from the origin and their respective distances from one another. Each drone operates using a basic greedy algorithm to determine its direction, and all drones can observe each other.
+We've designed a scenario involving **3 drones in a 2-dimensional space**. The drones are tasked with forming an **equilateral triangular formation** with a side length of 10, aiming to remain as proximate to the origin as possible. The final score is determined by averaging all agent scores. We've based this scoring mechanism on the objective function from Pavel's paper, which accounts for the mean squared cost of each drone's distance from the origin and their relative distances from each other. Every drone utilizes a fundamental greedy algorithm to choose its direction, and all drones have mutual visibility.
 
-In our greedy algorithm, there's an adjustable weight for the origin distance cost, rather than keeping the two components of the cost function equivalent. This is crucial because, with a very low weight, drones might avoid moving towards the origin and maintain their triangle formation.
+In our greedy algorithm, we've introduced an adjustable weight for the origin distance cost. This is distinct from an approach where the two components of the cost function are equivalent. Such an adjustable weight is essential because, at low values, drones may prefer staying in their triangle formation over moving closer to the origin.
 
 ## POC Key Concepts
 
-Starting with a perfect equilateral triangle of length 10:
+Given a starting point of a perfect equilateral triangle of length 10:
 
-- `equil_center.py`: Displays a "global optimum" point— an equilateral triangle centered at the origin. Here, each drone has a cost of ~6, the minimum achievable.
-- `equil_point.py`: Demonstrates that initializing one drone at the origin causes it to remain stationary, leading to a suboptimal convergence of 6.66.
+- `equil_center.py`: Highlights a "global optimum" point—an equilateral triangle centralized at the origin. In this setup, each drone incurs a cost of approximately 6, the lowest possible.
+- `equil_point.py`: Illustrates that positioning one drone at the origin will make it static, leading to a suboptimal convergence score of 6.66.
 
-For `equil_far`:
+For the `equil_far` segment:
 
-- `stuck`: Provides an instance where the weight is too low, preventing drone movement.
-- `opt`: Shows a near-optimal scenario where a sufficient weight moves the drones towards the center.
-- `implode`: Depicts what happens when the weight is overly high, causing the drones to "implode" towards the center, resulting in suboptimal convergence.
+- `stuck`: Represents a situation where the weight is insufficient, causing the drones to stay stationary.
+- `opt`: Depicts a scenario that is almost optimal, where an adequate weight nudges the drones closer to the center.
+- `implode`: Reveals the consequences of setting the weight excessively high, making drones "implode" towards the center and leading to suboptimal convergence.
 
 ## Next Steps
 
-- [ ] Implement a robust greedy epsilon or an alternative algorithm instead of pure greedy.
-- [ ] Simulate scenarios with partial information and adversarial settings.
-- [ ] Refine the testing framework and conduct grid searches on weight and epsilon values.
-- [ ] Migrate the framework, algorithm, and results to PettingZoo libraries.
-- [ ] Define explicit convergence criteria.
+- [x] Implement a sturdy greedy epsilon or an alternative strategy over the pure greedy approach.
+- [ ] Introduce simulations with partial information and potential adversarial elements.
+- [x] Improve the testing framework and carry out grid searches on weight and epsilon parameters.
+- [ ] Transfer the framework, algorithm, and resultant data to the PettingZoo libraries.
+- [ ] Clearly articulate the criteria for convergence.
 
 ## Additional Information
 
-The primary source code is located in `drone_simulation.py`, while the testing framework is found in `test_simulation.py`. The `D matrix` outlines the desired final drone configuration. It's essential that this matrix remains symmetric; otherwise, drone pairs might have conflicting objectives and never converge. The "Distance to origin weight" parameter describes its namesake, and "epsilon" determines the likelihood of a drone making a random rather than a greedy move.
-The verbose flag prints out all drone information per iteration and plots them. 
+- `drone_simulation.py`: This is where the core environment setup is located.
+- `batch_grid_test.py`: Executes grid searches multiple times for each configuration, aiding in discerning the optimal setup.
+- **D matrix**: Defines the intended final positions of the drones. To ensure convergence, this matrix should maintain symmetry.
+- **Distance to origin weight**: As the name suggests, this parameter specifies the weight given to a drone's distance from the origin.
+- **Epsilon**: Dictates the probability of a drone opting for a random decision instead of a decision from the greedy algorithm.
+- **Verbose**: When activated, this flag outputs comprehensive drone data for every iteration and presents them visually in plots.

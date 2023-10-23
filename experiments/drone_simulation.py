@@ -1,46 +1,25 @@
+from drone_algorithms import greedy_decision
 import random
 import matplotlib.pyplot as plt
 import numpy as np
 import concurrent.futures
 
 class Drone:
-    def __init__(self, position=(0.0,0.0)):
+    def __init__(self, decision_function, position=(0.0,0.0)):
         self.x, self.y = position
         self.intended_direction = (0, 0)
-        self.current_cost = float('inf')  # Initialize with a high cost
+        self.decision_function = decision_function
+        self.current_cost = float('inf')
 
-    def calculate_direction(self, all_drones, drone_index, D, epsilon=0.0):
-        min_value = float('inf')
-        best_dir = (0, 0)
-
-        # With probability epsilon, choose a random direction
-        if random.random() < epsilon:
-            self.intended_direction = (random.choice([-1, 0, 1]), random.choice([-1, 0, 1]))
-            return
-
-        # Otherwise, use the greedy approach
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                # Calculate average distance of all drones from the origin excluding the current drone and including drone's potential new position
-                cost = DISTANCE_TO_ORIGIN_WEIGHT*(sum([np.sqrt(drone.x**2 + drone.y**2) for i, drone in enumerate(all_drones) if i != drone_index]) + np.sqrt((self.x + dx)**2 + (self.y + dy)**2)) / len(all_drones)
-
-                for j, other_drone in enumerate(all_drones):
-                    if j != drone_index:
-                        dist = np.sqrt((self.x + dx - other_drone.x)**2 + (self.y + dy - other_drone.y)**2)
-                        cost += (dist - D[drone_index][j])**2
-
-                if cost < min_value:
-                    min_value = cost
-                    best_dir = (dx, dy)
-
-        self.intended_direction = best_dir
+    def calculate_direction(self, all_drones, drone_index, D, **kwargs):
+        self.intended_direction = self.decision_function(self, all_drones, drone_index, D, **kwargs)
 
     def move(self):
         self.x += self.intended_direction[0]
         self.y += self.intended_direction[1]
 
-def worker(drone, all_drones, idx, D):
-    drone.calculate_direction(all_drones, idx, D)
+def worker(drone, all_drones, idx, D, distance_to_origin_weight, epsilon):
+    drone.calculate_direction(all_drones, idx, D, distance_to_origin_weight=distance_to_origin_weight, epsilon=epsilon)
     drone.move()  # move the drone after calculation
     return drone
 
@@ -58,14 +37,14 @@ def individual_drone_score(drone, all_drones, drone_index, D):
     
     return score
 
-def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight=1, epsilon=0.1, verbose=True):
+def simulate_environment(N, D, initial_positions=None, decision_function=greedy_decision, distance_to_origin_weight=1, epsilon=0.1, verbose=True):
     global DISTANCE_TO_ORIGIN_WEIGHT
     DISTANCE_TO_ORIGIN_WEIGHT = distance_to_origin_weight
     
     if initial_positions is None:
-        drones = [Drone((random.randint(-50,50), random.randint(-50,50))) for _ in range(N)]
+        drones = [Drone(decision_function, (random.randint(-50,50), random.randint(-50,50))) for _ in range(N)]
     else:
-        drones = [Drone(pos) for pos in initial_positions]
+        drones = [Drone(decision_function, pos) for pos in initial_positions]
 
     iteration = 0
     positions_history = []
@@ -88,7 +67,8 @@ def simulate_environment(N, D, initial_positions=None, distance_to_origin_weight
             break
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            drones = list(executor.map(worker, drones, [drones]*N, range(N), [D]*N))
+            drones = list(executor.map(worker, drones, [drones]*N, range(N), [D]*N, [distance_to_origin_weight]*N, [epsilon]*N))
+
 
     if verbose:
         # Plotting

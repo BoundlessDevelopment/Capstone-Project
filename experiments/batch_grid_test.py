@@ -1,12 +1,18 @@
 from drone_simulation import simulate_environment
+from drone_algorithms import greedy_decision  # Assuming this is where you've saved your decision-making function
+
 import numpy as np
 import concurrent.futures
 import time  # Importing the time module
 
-def run_simulation(N, D, weight, eps, m):
+def run_simulation(N, D, weight, eps, m, decision_function):
     total_score = 0
     for _ in range(m):
-        score = simulate_environment(N, D, distance_to_origin_weight=weight, epsilon=eps, verbose=False)
+        score = simulate_environment(N, D, 
+                                     distance_to_origin_weight=weight, 
+                                     epsilon=eps, 
+                                     decision_function=decision_function,   # Passing the decision function as a parameter
+                                     verbose=False)
         total_score += score
     average_score = total_score / m
     return {
@@ -17,9 +23,9 @@ def run_simulation(N, D, weight, eps, m):
 
 def grid_search_simulation(m):
     # Define the grid for distance_to_origin_weight and epsilon
-    distance_to_origin_weights = [0.5, 1, 5, 10]
-    epsilons = [0, 0.05, 0.1, 0.5]
-    
+    distance_to_origin_weights = [5]
+    epsilons = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+
     N = 3
     D = [
         [0, 10, 10], 
@@ -31,11 +37,15 @@ def grid_search_simulation(m):
     results = []
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_simulation, N, D, weight, eps, m) for weight in distance_to_origin_weights for eps in epsilons]
+        # Passing the decision function to each simulation run
+        futures = [executor.submit(run_simulation, N, D, weight, eps, m, greedy_decision) for weight in distance_to_origin_weights for eps in epsilons]
+        
         for future in concurrent.futures.as_completed(futures):
             results.append(future.result())
 
-    # Print the results
+    # Sort the results by weight and then by epsilon before printing
+    results.sort(key=lambda x: (x['distance_to_origin_weight'], x['epsilon']))
+
     for result in results:
         print(f"Weight: {result['distance_to_origin_weight']}, Epsilon: {result['epsilon']}, Average Score: {result['average_score']}")
 
