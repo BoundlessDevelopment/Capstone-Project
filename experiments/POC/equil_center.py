@@ -1,8 +1,9 @@
 import sys
-sys.path.append("..")  # Adds higher directory to python modules path
+sys.path.insert(0, "..")  # Insert at the beginning of sys.path
 
 from drone_simulation import simulate_environment
 from drone_algorithms import greedy_decision
+
 
 import numpy as np
 

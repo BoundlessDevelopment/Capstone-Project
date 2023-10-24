@@ -14,12 +14,11 @@ def test_simulation():
     # Generating random starting positions for the drones within a 20x20 square
     random_positions = [(np.random.uniform(0, 20), np.random.uniform(0, 20)) for _ in range(N)]
 
-    avg_score = simulate_environment(N, D, 
-                                     initial_positions=random_positions, 
-                                     decision_function=greedy_decision,   # Passing the decision function as a parameter
-                                     distance_to_origin_weight=10, 
-                                     epsilon=0, 
-                                     verbose=True)
+    avg_score = simulate_environment(N, D, adversarial_indices=[])  # Sets drones at indices 2 and 4 as adversarial
+
+
+
+
     print(f"Average Score: {avg_score}")
 
 if __name__ == "__main__":

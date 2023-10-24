@@ -13,6 +13,8 @@ def worker(drone, all_drones, all_beliefs, idx, D, distance_to_origin_weight, ep
     drone.move()  # move the drone after calculation
     return drone
 
+def compute_share_vector(drone):
+    return drone.get_share_vector()
 
 def individual_drone_score(drone, all_drones, drone_index, D):
     score = 0

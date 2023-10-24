@@ -27,10 +27,22 @@ For the `equil_far` segment:
 - `opt`: Depicts a scenario that is almost optimal, where an adequate weight nudges the drones closer to the center.
 - `implode`: Reveals the consequences of setting the weight excessively high, making drones "implode" towards the center and leading to suboptimal convergence.
 
+### Partial Information and Adversarial Implementation
+
+In the advanced stages of our experiments, we have introduced more real-world complexities such as partial information sharing and adversarial behavior among drones:
+
+- **Partial Information**: Not every drone has full knowledge of the complete environment or the positions of all other drones. They rely on two primary mechanisms for information gathering:
+  - **Observation**: Each drone has an observation radius within which it can directly see and identify the positions of other drones.
+  - **Communication**: Drones can also communicate their beliefs (positions of other drones) within a certain communication radius. This allows drones outside of direct observation to gather information about others indirectly.
+
+- **Adversarial Drones**: In some simulations, certain drones behave as adversaries. These adversarial drones share corrupted data, either by generating noise or by deliberately misleading. This introduces challenges for the regular drones to accurately determine the optimal positions.
+  - **Noise Addition**: When an adversarial drone shares its beliefs, it adds noise to the data. This means that the data received from such a drone is perturbed and can mislead others.
+  - **Handling Adversaries**: Drones need to determine how to best handle such misleading data, whether by filtering it out, considering it with less weight, or using other mechanisms to ensure optimal decision making
+
 ## Next Steps
 
 - [x] Implement a sturdy greedy epsilon or an alternative strategy over the pure greedy approach.
-- [ ] Introduce simulations with partial information and potential adversarial elements.
+- [x] Introduce simulations with partial information and potential adversarial elements.
 - [x] Improve the testing framework and carry out grid searches on weight and epsilon parameters.
 - [ ] Transfer the framework, algorithm, and resultant data to the PettingZoo libraries.
 - [ ] Clearly articulate the criteria for convergence.
@@ -43,3 +55,4 @@ For the `equil_far` segment:
 - **Distance to origin weight**: As the name suggests, this parameter specifies the weight given to a drone's distance from the origin.
 - **Epsilon**: Dictates the probability of a drone opting for a random decision instead of a decision from the greedy algorithm.
 - **Verbose**: When activated, this flag outputs comprehensive drone data for every iteration and presents them visually in plots.
+- **Unit Tests**: Ensures the correct functionality of drone initialization, visibility, communication, simulation termination, and belief updates.
