@@ -46,6 +46,7 @@ In the advanced stages of our experiments, we have introduced more real-world co
 - [x] Improve the testing framework and carry out grid searches on weight and epsilon parameters.
 - [ ] Transfer the framework, algorithm, and resultant data to the PettingZoo libraries.
 - [ ] Clearly articulate the criteria for convergence.
+- [ ] Write extensive tests and POCs, leveraging all parameters associated with partial observability and adversaries.
 
 ## Additional Information
 
