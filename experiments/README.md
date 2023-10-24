@@ -1,59 +1,58 @@
 # Experiments Repository
 
-In this repository, our objectives are to:
+This repository focuses on conducting experiments related to drone formations in a 2-dimensional space. Our primary goals include constructing the problem layout, performing experiments, and documenting observations. While we commence with basic Python implementations, as the tasks escalate in complexity, we shift towards more advanced frameworks.
 
-- Construct the layout of the problem.
-- Conduct new experiments.
-- Record observations.
+## Overview
 
-All tasks begin with simple Python implementations. As the complexity of the tasks increases, we transition to more sophisticated frameworks.
+- **Scenario**: Three drones in a 2D space attempting to form an equilateral triangle.
+- **Objective**: Achieve an equilateral triangular formation with a side length of 10 while staying close to the origin.
+- **Scoring**: Based on Pavel's objective function, the final score is an average of each drone's score. This score considers the mean squared cost of each drone's distance from the origin and their relative distances to each other.
+- **Algorithm**: A basic greedy algorithm drives the drones, with an adjustable weight for the origin distance cost.
 
-## Current Setup
+## Decision Functions: Mean vs Median
 
-We've designed a scenario involving **3 drones in a 2-dimensional space**. The drones are tasked with forming an **equilateral triangular formation** with a side length of 10, aiming to remain as proximate to the origin as possible. The final score is determined by averaging all agent scores. We've based this scoring mechanism on the objective function from Pavel's paper, which accounts for the mean squared cost of each drone's distance from the origin and their relative distances from each other. Every drone utilizes a fundamental greedy algorithm to choose its direction, and all drones have mutual visibility.
+In the realm of our experiments, decision functions play a pivotal role in guiding the actions of the drones:
 
-In our greedy algorithm, we've introduced an adjustable weight for the origin distance cost. This is distinct from an approach where the two components of the cost function are equivalent. Such an adjustable weight is essential because, at low values, drones may prefer staying in their triangle formation over moving closer to the origin.
+- **Mean Decision Function**: This approach aggregates the data from all drones to derive a collective decision by averaging. While it offers a holistic view, its decisions can be influenced by outliers or misleading data, especially from adversarial drones.
+- **Median Decision Function**: Serving as a resilient alternative to the mean, the median decision function minimizes the influence of extreme values or anomalous data. By extracting the median value from the available data, it provides a more stable reference for the drones' actions. Notably, employing the median decision function has enabled us to accurately replicate Dian's code results, affirming its reliability and consistency within our experimental setup.
+## Key Concepts
 
-## POC Key Concepts
+### Basic Simulations
 
-Given a starting point of a perfect equilateral triangle of length 10:
+- `equil_center.py`: Demonstrates an equilateral triangle centered at the origin. Here, the cost incurred by each drone is around 6.
+- `equil_point.py`: Shows the effect of positioning one drone at the origin—resulting in a suboptimal score of 6.66.
 
-- `equil_center.py`: Highlights a "global optimum" point—an equilateral triangle centralized at the origin. In this setup, each drone incurs a cost of approximately 6, the lowest possible.
-- `equil_point.py`: Illustrates that positioning one drone at the origin will make it static, leading to a suboptimal convergence score of 6.66.
+#### For the `equil_far` segment:
+- `stuck`: Drones remain stationary due to insufficient weight.
+- `opt`: An almost optimal scenario where drones move closer to the center.
+- `implode`: Overemphasis on the center causes drones to "implode", leading to suboptimal convergence.
 
-For the `equil_far` segment:
+### Advanced Simulations
 
-- `stuck`: Represents a situation where the weight is insufficient, causing the drones to stay stationary.
-- `opt`: Depicts a scenario that is almost optimal, where an adequate weight nudges the drones closer to the center.
-- `implode`: Reveals the consequences of setting the weight excessively high, making drones "implode" towards the center and leading to suboptimal convergence.
+- **Partial Information**: Drones have limited knowledge about their environment.
+  - **Observation**: Drones detect others within a specific observation radius.
+  - **Communication**: Drones communicate their perceived positions to others within a communication radius.
 
-### Partial Information and Adversarial Implementation
+- **Adversarial Drones**: Simulations introduce drones that share misleading data.
+  - **Noise Addition**: Adversarial drones add noise to shared data.
+  - **Handling Adversaries**: Drones develop strategies to deal with inaccurate data.
 
-In the advanced stages of our experiments, we have introduced more real-world complexities such as partial information sharing and adversarial behavior among drones:
+## Progress & Next Steps
 
-- **Partial Information**: Not every drone has full knowledge of the complete environment or the positions of all other drones. They rely on two primary mechanisms for information gathering:
-  - **Observation**: Each drone has an observation radius within which it can directly see and identify the positions of other drones.
-  - **Communication**: Drones can also communicate their beliefs (positions of other drones) within a certain communication radius. This allows drones outside of direct observation to gather information about others indirectly.
+- [x] Shift from pure greedy to a robust greedy epsilon or an alternative approach.
+- [x] Incorporate simulations with partial information and adversarial factors.
+- [x] Enhance the testing framework and execute grid searches on parameters.
+- [ ] Migrate framework, algorithm, and data to the PettingZoo libraries.
+- [ ] Define clear convergence criteria.
+- [ ] Develop comprehensive tests and POCs with focus on partial observability and adversaries.
 
-- **Adversarial Drones**: In some simulations, certain drones behave as adversaries. These adversarial drones share corrupted data, either by generating noise or by deliberately misleading. This introduces challenges for the regular drones to accurately determine the optimal positions.
-  - **Noise Addition**: When an adversarial drone shares its beliefs, it adds noise to the data. This means that the data received from such a drone is perturbed and can mislead others.
-  - **Handling Adversaries**: Drones need to determine how to best handle such misleading data, whether by filtering it out, considering it with less weight, or using other mechanisms to ensure optimal decision making
+## Resources & Additional Details
 
-## Next Steps
-
-- [x] Implement a sturdy greedy epsilon or an alternative strategy over the pure greedy approach.
-- [x] Introduce simulations with partial information and potential adversarial elements.
-- [x] Improve the testing framework and carry out grid searches on weight and epsilon parameters.
-- [ ] Transfer the framework, algorithm, and resultant data to the PettingZoo libraries.
-- [ ] Clearly articulate the criteria for convergence.
-- [ ] Write extensive tests and POCs, leveraging all parameters associated with partial observability and adversaries.
-
-## Additional Information
-
-- `drone_simulation.py`: This is where the core environment setup is located.
-- `batch_grid_test.py`: Executes grid searches multiple times for each configuration, aiding in discerning the optimal setup.
-- **D matrix**: Defines the intended final positions of the drones. To ensure convergence, this matrix should maintain symmetry.
-- **Distance to origin weight**: As the name suggests, this parameter specifies the weight given to a drone's distance from the origin.
-- **Epsilon**: Dictates the probability of a drone opting for a random decision instead of a decision from the greedy algorithm.
-- **Verbose**: When activated, this flag outputs comprehensive drone data for every iteration and presents them visually in plots.
-- **Unit Tests**: Ensures the correct functionality of drone initialization, visibility, communication, simulation termination, and belief updates.
+- **Core Setup**: `drone_simulation.py` houses the foundational environment configurations.
+- **Grid Tests**: `batch_grid_test.py` runs grid tests for each configuration to determine the best setup.
+- **Parameters & Definitions**:
+  - **D matrix**: Specifies the desired final drone positions. It should be symmetrical for convergence.
+  - **Distance to Origin Weight**: Weight prioritizing a drone's proximity to the origin.
+  - **Epsilon**: Chance of a drone making a random instead of a greedy decision.
+  - **Verbose**: Activating this provides detailed drone data and visual plots per iteration.
+  - **Unit Tests**: Validates drone features like initialization, visibility, communication, and more.

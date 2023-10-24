@@ -30,16 +30,26 @@ def individual_drone_score(drone, all_drones, drone_index, D):
     
     return score
 
+import matplotlib.pyplot as plt
+
 def plot_drone_movements(positions_history):
     plt.figure(figsize=(5,5))
+    
     for iteration, positions in enumerate(positions_history):
         for idx, (x, y) in enumerate(positions):
             color = ['red', 'blue', 'green', 'orange', 'purple', 'brown'][idx % 6]
-            plt.plot(x, y, color, label="Drone" + str(idx) if iteration == 1 else "", alpha=0.1)
+            plt.plot(x, y, color, label="Drone" + str(idx) if iteration == 0 else "", alpha=0.1)
             plt.text(x, y, str(iteration), color=color, fontsize=8, ha='center', va='center')
-
+    
+    # Marking the final position of each drone with a big blob
+    for idx, (x, y) in enumerate(positions_history[-1]):
+        color = ['red', 'blue', 'green', 'orange', 'purple', 'brown'][idx % 6]
+        plt.scatter(x, y, s=100, c=color, edgecolors='black', alpha=0.7, label=f"Final Drone {idx}")
+    
     plt.title('Drone Movements Over Iterations')
     plt.xlabel('X-coordinate')
     plt.ylabel('Y-coordinate')
+    plt.legend(loc='upper right', fontsize='small')  # Adjust the location and font size here
     plt.grid(True)
     plt.show()
+

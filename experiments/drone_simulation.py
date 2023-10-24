@@ -1,14 +1,15 @@
-from drone_algorithms import greedy_decision
+from drone_algorithms import greedy_decision, mean_update, median_update
 from utils import compute_distance, worker, individual_drone_score, plot_drone_movements, compute_share_vector
 import random
 import concurrent.futures
 import numpy as np
 
 class Drone:
-    def __init__(self, decision_function, position=(0.0,0.0), observation_radius=0, communication_radius=1000, num_drones=0, adversarial=False):
+    def __init__(self, decision_function, belief_update_function,  position=(0.0,0.0), observation_radius=0, communication_radius=1000, num_drones=0, adversarial=False):
         self.x, self.y = position
         self.intended_direction = (0, 0)
         self.decision_function = decision_function
+        self.belief_update_function = belief_update_function
         self.current_cost = float('inf')
         self.observation_radius = observation_radius
         self.communication_radius = communication_radius
@@ -33,20 +34,8 @@ class Drone:
             return self.beliefs.copy()
     
     def update_beliefs(self, all_drones, all_share_vectors, drone_index):
-        visible_drones_set = self.visible_drones(all_drones)
-        communicating_drones_set = self.communicating_drones(all_drones)
-
-        for idx, drone in enumerate(all_drones):
-            # If the drone is directly visible, update its location directly
-            if drone in visible_drones_set:
-                self.beliefs[idx] = (drone.x, drone.y)
-            else:
-                # If the drone is not directly visible, then update its belief based on the communicating drones' shared vectors
-                other_beliefs = [b[idx] for i, b in enumerate(all_share_vectors) if all_drones[i] in communicating_drones_set and b[idx] != (None, None)]
-                if other_beliefs:
-                    avg_x = sum(x for x, _ in other_beliefs) / len(other_beliefs)
-                    avg_y = sum(y for _, y in other_beliefs) / len(other_beliefs)
-                    self.beliefs[idx] = (avg_x, avg_y)
+        self.belief_update_function(self, all_drones, all_share_vectors, drone_index)
+        print(self.beliefs)
 
     def calculate_direction(self, all_drones, drone_index, D, **kwargs):
         beliefs_positions = [pos for pos in self.beliefs if pos != (None, None)]
@@ -56,15 +45,15 @@ class Drone:
         self.x += self.intended_direction[0]
         self.y += self.intended_direction[1]
 
-def simulate_environment(N, D, initial_positions=None, decision_function=greedy_decision, distance_to_origin_weight=5, epsilon=0.1, verbose=True, num_adversarial=1, observation_radius=0, communication_radius=1000):
+def simulate_environment(N, D, initial_positions=None, decision_function=greedy_decision, belief_update_function=mean_update, distance_to_origin_weight=5, epsilon=0.1, verbose=True, num_adversarial=0, observation_radius=0, communication_radius=1000):
     
      # Determine which drones are adversarial based on the num_adversarial parameter
     adversarial_flags = [True] * num_adversarial + [False] * (N - num_adversarial)
 
     if initial_positions is None:
-        drones = [Drone(decision_function, (random.randint(-50,50), random.randint(-50,50)), observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i in range(N)]
+        drones = [Drone(decision_function, belief_update_function, (random.randint(-50,50), random.randint(-50,50)), observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i in range(N)]
     else:
-        drones = [Drone(decision_function, pos, observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i, pos in enumerate(initial_positions)]
+        drones = [Drone(decision_function, belief_update_function, pos, observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i, pos in enumerate(initial_positions)]
 
     iteration = 0
     positions_history = []

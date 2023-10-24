@@ -24,6 +24,8 @@ def test_simulation():
                                      decision_function=greedy_decision,   # Passing the decision function as a parameter
                                      distance_to_origin_weight=1, 
                                      epsilon=0, 
+                                     observation_radius= 1000,
+                                     communication_radius= 0,
                                      verbose=True)
     print(f"Average Score: {avg_score}")
 

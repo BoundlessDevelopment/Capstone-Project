@@ -33,7 +33,9 @@ def test_simulation():
                                      initial_positions=optimal_positions, 
                                      decision_function=greedy_decision,   # Passing the decision function as a parameter
                                      distance_to_origin_weight=30, 
-                                     epsilon=0, 
+                                     epsilon=0,
+                                     observation_radius= 1000,
+                                     communication_radius= 0, 
                                      verbose=True)
     print(f"Average Score: {avg_score}")
 
