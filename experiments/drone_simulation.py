@@ -5,7 +5,7 @@ import concurrent.futures
 import numpy as np
 
 class Drone:
-    def __init__(self, decision_function, position=(0.0,0.0), observation_radius=50, communication_radius=50, num_drones=0, adversarial=False):
+    def __init__(self, decision_function, position=(0.0,0.0), observation_radius=0, communication_radius=1000, num_drones=0, adversarial=False):
         self.x, self.y = position
         self.intended_direction = (0, 0)
         self.decision_function = decision_function
@@ -56,12 +56,15 @@ class Drone:
         self.x += self.intended_direction[0]
         self.y += self.intended_direction[1]
 
-def simulate_environment(N, D, initial_positions=None, decision_function=greedy_decision, distance_to_origin_weight=5, epsilon=0.1, verbose=True, adversarial_indices=[], observation_radius=50, communication_radius=50):
+def simulate_environment(N, D, initial_positions=None, decision_function=greedy_decision, distance_to_origin_weight=5, epsilon=0.1, verbose=True, num_adversarial=1, observation_radius=0, communication_radius=1000):
     
+     # Determine which drones are adversarial based on the num_adversarial parameter
+    adversarial_flags = [True] * num_adversarial + [False] * (N - num_adversarial)
+
     if initial_positions is None:
-        drones = [Drone(decision_function, (random.randint(-50,50), random.randint(-50,50)), observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=(i in adversarial_indices)) for i in range(N)]
+        drones = [Drone(decision_function, (random.randint(-50,50), random.randint(-50,50)), observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i in range(N)]
     else:
-        drones = [Drone(decision_function, pos, observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=(i in adversarial_indices)) for i, pos in enumerate(initial_positions)]
+        drones = [Drone(decision_function, pos, observation_radius=observation_radius, communication_radius=communication_radius, num_drones=N, adversarial=adversarial_flags[i]) for i, pos in enumerate(initial_positions)]
 
     iteration = 0
     positions_history = []
@@ -90,4 +93,4 @@ def simulate_environment(N, D, initial_positions=None, decision_function=greedy_
         plot_drone_movements(positions_history)
 
     avg_score = sum([individual_drone_score(drone, drones, idx, D) for idx, drone in enumerate(drones)]) / N
-    return avg_score
+    return avg_score, iteration
