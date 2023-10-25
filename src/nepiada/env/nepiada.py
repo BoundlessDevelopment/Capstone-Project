@@ -10,6 +10,8 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 from utils.config import Config
 from utils.world import World
 
+possible_moves = {0 : "STAY", 1 : "UP", 2 : "DOWN", 3 : "LEFT", 4 : "RIGHT"}
+
 def parallel_env(config : Config):
     """
     The env function often wraps the environment in wrappers by default.
