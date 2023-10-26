@@ -148,10 +148,8 @@ class nepiada(ParallelEnv):
         - infos
         dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
-        # If a user passes in actions with no agents, then just return empty observations, etc.
-        if not actions:
-            self.agents = []
-            return {}, {}, {}, {}, {}
+        # Assert that number of actions are equal to the number of agents
+        assert len(actions) == len(self.agents)
 
         self.move_drones(actions)
         # We should update the rewards here, for now, we will just set everything to 0
