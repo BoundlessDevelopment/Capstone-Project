@@ -117,6 +117,8 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
+        print("All Agents: ", str(self.agents))
+       
         self.num_moves = 0
 
         # TODO: Reinitialize the grid
@@ -131,8 +133,6 @@ class nepiada(ParallelEnv):
         self.truncations = {agent: False for agent in self.agents}
 
         self.infos = {agent: {} for agent in self.agents}
-        print(set(self.infos.keys()))
-        print(set(self.agents))
 
         self.state = self.observations
 

@@ -19,7 +19,7 @@ class Agent(Entity):  # properties of agent entities
     def __init__(self, type, uid):
         super().__init__()
 
-        print("Agent has been initialized")
+        print("Agent with uid " + str(uid) + " has been initialized")
 
         # Randomize the position of the agent, p_pos is stored as [x_coor, y_coor] of the agent
         self.p_pos = np.random.randint(low=0, high=Config.size, size=2)
