@@ -16,7 +16,7 @@ class Entity:  # physical/external base state of all entities
         self.p_vel = None
 
 class Agent(Entity):  # properties of agent entities
-    def __init__(self, type):
+    def __init__(self, type, uid):
         super().__init__()
 
         print("Agent has been initialized")
@@ -33,4 +33,6 @@ class Agent(Entity):  # properties of agent entities
         # cannot observe the world
         self.blind = False
 
+        # unique agent id as int
+        self.uid = uid
     

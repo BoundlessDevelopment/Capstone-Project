@@ -10,8 +10,6 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 from utils.config import Config
 from utils.world import World
 
-possible_moves = {0 : "STAY", 1 : "UP", 2 : "DOWN", 3 : "LEFT", 4 : "RIGHT"}
-
 def parallel_env(config : Config):
     """
     The env function often wraps the environment in wrappers by default.
@@ -50,19 +48,17 @@ class nepiada(ParallelEnv):
         """
 
         self.total_agents = config.num_good_agents + config.num_adversarial_agents
-
-        # Initialize the agents
+        self.config = config
         self.possible_agents = []
-        for i in range(self.total_agents):
-            if i < config.num_adversarial_agents:
-                self.possible_agents.append("adversarial_" + str(i))
-            else:
-                self.possible_agents.append("truthful_" + str(i))
 
         self.render_mode = render_mode
 
         # TODO: Need to make a grid and initialize agents - currently just adding all agents
-        self.world = World()
+        self.world = World(config)
+
+        # Add IDs to possible agents
+        for id in self.world.agents:
+            self.possible_agents.append(id)
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
@@ -71,7 +67,7 @@ class nepiada(ParallelEnv):
 
         # Observation space is defined as a N x 2 matrix, where each row corresponds to an agents coordinates.
         # The first column stores the x coordinate and the second column stores the y coordinate
-        return Box(low=0, high=config.size, shape=(self.total_agents, 2), dtype=np.int_)
+        return Box(low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.int_)
 
     # Action space should be defined here.
     @functools.lru_cache(maxsize=None)
@@ -90,6 +86,10 @@ class nepiada(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
+        elif self.render_mode == "human":
+            # Temporary to print grid for debug purposes until we have a better way to render.
+            self.world.grid.print_grid()
+
 
     def observe(self, agent):
         """
@@ -153,6 +153,7 @@ class nepiada(ParallelEnv):
             self.agents = []
             return {}, {}, {}, {}, {}
 
+        self.move_drones(actions)
         # We should update the rewards here, for now, we will just set everything to 0
         rewards = {agent: 0 for agent in self.agents}
 
@@ -170,8 +171,34 @@ class nepiada(ParallelEnv):
 
         # TODO: Need to add information to infos
 
-
         if self.render_mode == "human":
             self.render()
         
         return observations, rewards, terminations, truncations, infos
+
+    def move_drones(self, actions):
+        """
+        Move the drones according to the actions
+        """
+        # Drones that collided with another drone, for reprocessing
+        collided_drones = []
+
+        for agent_id in self.agents:
+            agent = self.world.agents[agent_id]
+            action = actions[agent_id]
+            status = self.world.grid.move_drone(agent, action)
+            if status == -2:
+                collided_drones.append(agent_id)
+            elif status == -1:
+                # Drone collided with boundary
+                pass
+
+        # Check collided drones in reverse to see if moving them is possible in this step
+        for agent_id in reversed(collided_drones):
+            agent = self.world.agents[agent_id]
+            action = actions[agent_id]
+            status = self.world.grid.move_drone(agent, action)
+            if status == -2:
+                # Drone collided with another drone
+                pass
+        
