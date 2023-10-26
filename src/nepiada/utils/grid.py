@@ -35,15 +35,23 @@ class Grid():
         x_coord = agent.p_pos[0]
         y_coord = agent.p_pos[1]
 
+        # Check if the move is to stay in the same position, if so just return
+        dx = self.config.possible_moves[action][0]
+        dy = self.config.possible_moves[action][1]
+
+        if dx == 0 and dy == 0:
+            return 0
+
         # Get the new position of the agent
-        new_x_coord = x_coord + self.config.possible_moves[action][0]
-        new_y_coord = y_coord + self.config.possible_moves[action][1]
+        new_x_coord = x_coord + dx
+        new_y_coord = y_coord + dy
+
         # Check if the new position is valid
         if new_x_coord < 0 or new_x_coord >= self.dim or new_y_coord < 0 or new_y_coord >= self.dim:
             return -1
 
         # Check if the new position is occupied
-        if (x_coord != new_x_coord or y_coord != new_y_coord) and self.state[new_x_coord][new_y_coord] != 0:
+        if self.state[new_x_coord][new_y_coord] != 0:
             return -2
 
         # Update the grid
