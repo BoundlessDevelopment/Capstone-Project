@@ -20,7 +20,7 @@ class Grid():
         self.Go = {}
 
     def update_grid(self, agents):
-        for id, agent in agents.items():
+        for _, agent in agents.items():
             x_coord = agent.p_pos[0]
             y_coord = agent.p_pos[1]
             # commenting this out for now until we have a better way to render
