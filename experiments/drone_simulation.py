@@ -35,7 +35,6 @@ class Drone:
     
     def update_beliefs(self, all_drones, all_share_vectors, drone_index):
         self.belief_update_function(self, all_drones, all_share_vectors, drone_index)
-        print(self.beliefs)
 
     def calculate_direction(self, all_drones, drone_index, D, **kwargs):
         beliefs_positions = [pos for pos in self.beliefs if pos != (None, None)]
@@ -79,7 +78,7 @@ def simulate_environment(N, D, initial_positions=None, decision_function=greedy_
             drones = list(executor.map(worker, drones, [drones]*N, [all_share_vectors]*N, range(N), [D]*N, [distance_to_origin_weight]*N, [epsilon]*N))
 
     if verbose:
-        plot_drone_movements(positions_history)
+        plot_drone_movements(positions_history, adversarial_flags) 
 
     avg_score = sum([individual_drone_score(drone, drones, idx, D) for idx, drone in enumerate(drones)]) / N
     return avg_score, iteration

@@ -4,7 +4,7 @@ import random
 import numpy as np
 from utils import compute_distance
 
-def greedy_decision(drone, beliefs_positions, drone_index, D, distance_to_origin_weight=1, epsilon=0.1):
+def greedy_decision(drone, beliefs_positions, drone_index, D, distance_to_origin_weight=5, epsilon=0.1):
     min_value = float('inf')
     best_dir = (0, 0)
 

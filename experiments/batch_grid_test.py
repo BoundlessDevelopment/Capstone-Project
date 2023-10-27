@@ -1,10 +1,12 @@
 from drone_simulation import simulate_environment
 from drone_algorithms import greedy_decision
-import numpy as np
 import concurrent.futures
 import time
 
-def run_simulation(N, D, weight, eps, m, decision_function):
+def run_simulation(N, D, m, decision_function, num_adversarial):
+    weight = 5  # Fixed value for distance_to_origin_weight
+    eps = 0.1  # Fixed value for epsilon
+
     total_score = 0
     total_iterations = 0  # This will hold the total number of iterations for all m simulations
     
@@ -13,6 +15,7 @@ def run_simulation(N, D, weight, eps, m, decision_function):
                                                  distance_to_origin_weight=weight, 
                                                  epsilon=eps, 
                                                  decision_function=decision_function,
+                                                 num_adversarial=num_adversarial,  # Include the number of adversarial agents
                                                  verbose=False)
         total_score += score
         total_iterations += iterations
@@ -23,45 +26,45 @@ def run_simulation(N, D, weight, eps, m, decision_function):
     return {
         'distance_to_origin_weight': weight,
         'epsilon': eps,
+        'num_adversarial': num_adversarial,  # Include the number of adversarial agents in the result
         'average_score': average_score,
         'average_iterations': average_iterations
     }
 
 def grid_search_simulation(m):
-    # Define the grid for distance_to_origin_weight and epsilon
-    distance_to_origin_weights = [5]
-    epsilons = [0, 0.1, 0.5]
+    # Number of adversarial agents
+    num_adversarial_agents = [0, 1]
 
-    N = 3
+    N = 4
     D = [
-        [0, 10, 10], 
-        [10, 0, 10], 
-        [10, 10, 0]
+        [0, 7.07, 10, 7.07], 
+        [7.07, 0, 7.07, 10], 
+        [10, 7.07, 0, 7.07], 
+        [7.07, 10, 7.07, 0]
     ]
 
     # Store the results
     results = []
 
-
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_simulation, N, D, weight, eps, m, greedy_decision) for weight in distance_to_origin_weights for eps in epsilons]
+        futures = [executor.submit(run_simulation, N, D, m, greedy_decision, num_adv) for num_adv in num_adversarial_agents]
 
         for future in concurrent.futures.as_completed(futures):
             results.append(future.result())
 
-    results.sort(key=lambda x: (x['distance_to_origin_weight'], x['epsilon']))
+    results.sort(key=lambda x: x['num_adversarial'])
 
     for result in results:
-        print(f"Weight: {result['distance_to_origin_weight']}, Epsilon: {result['epsilon']}, Average Score: {result['average_score']}, Average Iterations: {result['average_iterations']}")
+        print(f"Number of Adversarial Agents: {result['num_adversarial']}, Average Score: {result['average_score']}, Average Iterations: {result['average_iterations']}")
 
     best_config = min(results, key=lambda x: x['average_score'])
     print("\nBest Configuration:")
-    print(f"Weight: {best_config['distance_to_origin_weight']}, Epsilon: {best_config['epsilon']}, Average Score: {best_config['average_score']}, Average Iterations: {best_config['average_iterations']}")
+    print(f"Number of Adversarial Agents: {best_config['num_adversarial']}, Average Score: {best_config['average_score']}, Average Iterations: {best_config['average_iterations']}")
 
 if __name__ == "__main__":
     start_time = time.time()
 
-    m = 50
+    m = 10
     grid_search_simulation(m)
 
     end_time = time.time()

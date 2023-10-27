@@ -31,25 +31,59 @@ def individual_drone_score(drone, all_drones, drone_index, D):
     return score
 
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
-def plot_drone_movements(positions_history):
-    plt.figure(figsize=(5,5))
-    
-    for iteration, positions in enumerate(positions_history):
-        for idx, (x, y) in enumerate(positions):
-            color = ['red', 'blue', 'green', 'orange', 'purple', 'brown'][idx % 6]
-            plt.plot(x, y, color, label="Drone" + str(idx) if iteration == 0 else "", alpha=0.1)
-            plt.text(x, y, str(iteration), color=color, fontsize=8, ha='center', va='center')
-    
-    # Marking the final position of each drone with a big blob
-    for idx, (x, y) in enumerate(positions_history[-1]):
-        color = ['red', 'blue', 'green', 'orange', 'purple', 'brown'][idx % 6]
-        plt.scatter(x, y, s=100, c=color, edgecolors='black', alpha=0.7, label=f"Final Drone {idx}")
-    
-    plt.title('Drone Movements Over Iterations')
-    plt.xlabel('X-coordinate')
-    plt.ylabel('Y-coordinate')
-    plt.legend(loc='upper right', fontsize='small')  # Adjust the location and font size here
-    plt.grid(True)
+def update(frame, positions_history, scatters, texts, adversarial_flags):
+    for idx, (x, y) in enumerate(positions_history[frame]):
+        scatters[idx].set_offsets([x, y])
+        texts[idx].set_position((x, y))
+        label_text = "Adv" if adversarial_flags[idx] else str(frame)  # Label adversarial drones with "Adv"
+        texts[idx].set_text(label_text)
+
+def plot_drone_movements(positions_history, adversarial_flags, save_gif=True, filename='noadv.gif'):
+    fig, ax = plt.subplots(figsize=(5,5))
+    scatters = []
+    texts = []
+
+    normal_color = 'blue'  # Color for non-adversarial drones
+    adv_color = 'red'  # Distinct color for adversarial drones
+
+    for idx, (x, y) in enumerate(positions_history[0]):
+        color = adv_color if adversarial_flags[idx] else normal_color
+        marker = 'D' if adversarial_flags[idx] else 'o'  # Different shape for adversarial drones
+        scatter = ax.scatter(x, y, s=100, c=color, marker=marker, edgecolors='black', alpha=0.7, label=f"Drone {idx} {'(Adv)' if adversarial_flags[idx] else ''}")
+        scatters.append(scatter)
+        text = ax.text(x, y, "", color=color, fontsize=8, ha='center', va='center')
+        texts.append(text)
+
+    max_range = max(max([abs(x) for positions in positions_history for x, _ in positions]),
+                    max([abs(y) for positions in positions_history for _, y in positions]))
+    ax.set_xlim(-max_range, max_range)
+    ax.set_ylim(-max_range, max_range)
+
+    # Marking the origin (0, 0) with an "X"
+    ax.text(0, 0, 'X', color='black', fontsize=12, ha='center', va='center')
+
+    ax.set_title('Drone Movements Over Iterations')
+    ax.set_xlabel('X-coordinate')
+    ax.set_ylabel('Y-coordinate')
+    ax.grid(True)
+    ax.legend(loc='upper right', fontsize='small')
+
+    anim = FuncAnimation(fig, update, frames=len(positions_history), fargs=(positions_history, scatters, texts, adversarial_flags), interval=200, repeat=False)
+
+    if save_gif:
+        anim.save(filename, writer='pillow', fps=5)
+
     plt.show()
+
+# Example usage:
+# adversarial_flags = [False, True, False, True, False]  # Example: Drones 1 and 3 are adversarial
+# plot_drone_movements(positions_history, adversarial_flags, save_gif=True, filename='my_drone_animation.gif')
+
+
+
+
+
+
 
