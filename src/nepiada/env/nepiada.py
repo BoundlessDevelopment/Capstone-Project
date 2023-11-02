@@ -10,14 +10,15 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 from utils.config import Config
 from utils.world import World
 
-def parallel_env(config : Config):
+
+def parallel_env(config: Config):
     """
     The env function often wraps the environment in wrappers by default.
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
     internal_render_mode = "human"
-    env = raw_env(render_mode=internal_render_mode, config = config)
+    env = raw_env(render_mode=internal_render_mode, config=config)
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
     # Provides a wide vareity of helpful user errors
@@ -31,9 +32,10 @@ def raw_env(render_mode=None, config: Config = Config()):
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     """
-    env = nepiada(render_mode=render_mode, config = config)
+    env = nepiada(render_mode=render_mode, config=config)
     env = parallel_to_aec(env)
     return env
+
 
 class nepiada(ParallelEnv):
     metadata = {"render_modes": ["human"], "name": "nepiada_v1"}
@@ -67,7 +69,9 @@ class nepiada(ParallelEnv):
 
         # Observation space is defined as a N x 2 matrix, where each row corresponds to an agents coordinates.
         # The first column stores the x coordinate and the second column stores the y coordinate
-        return Box(low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.int_)
+        return Box(
+            low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.int_
+        )
 
     # Action space should be defined here.
     @functools.lru_cache(maxsize=None)
@@ -89,7 +93,6 @@ class nepiada(ParallelEnv):
         elif self.render_mode == "human":
             # Temporary to print grid for debug purposes until we have a better way to render.
             self.world.grid.print_grid()
-
 
     def observe(self, agent):
         """
@@ -118,7 +121,7 @@ class nepiada(ParallelEnv):
         """
         self.agents = self.possible_agents[:]
         print("All Agents: ", str(self.agents))
-       
+
         self.num_moves = 0
 
         # TODO: Reinitialize the grid
@@ -171,7 +174,7 @@ class nepiada(ParallelEnv):
 
         if self.render_mode == "human":
             self.render()
-        
+
         return observations, rewards, terminations, truncations, infos
 
     def move_drones(self, actions):
@@ -199,4 +202,3 @@ class nepiada(ParallelEnv):
             if status == -2:
                 # Drone collided with another drone
                 pass
-        
