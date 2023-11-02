@@ -1,8 +1,8 @@
 from utils.grid import Grid
-from utils.config import Config
 from utils.agent import Agent, AgentType
 
-class World():
+
+class World:
     def __init__(self, config):
         print("World has been initialized")
 
@@ -11,9 +11,11 @@ class World():
         self.agents = {}
         for i in range(self.num_agents):
             if i < config.num_adversarial_agents:
-                self.agents["adversarial_" + str(i)] = Agent(AgentType.ADVERSARIAL, i + 1)
+                self.agents["adversarial_" + str(i)] = Agent(
+                    AgentType.ADVERSARIAL, i + 1
+                )
             else:
-                self.agents["truthful_" + str(i)] = (Agent(AgentType.TRUTHFUL, i + 1))
+                self.agents["truthful_" + str(i)] = Agent(AgentType.TRUTHFUL, i + 1)
 
         # Initialize the Grid
         self.grid = Grid(config)
