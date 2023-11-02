@@ -11,12 +11,9 @@ class World:
         self.agents = {}
         for i in range(self.num_agents):
             if i < config.num_adversarial_agents:
-                self.agents["adversarial_" + str(i)] = Agent(
-                    AgentType.ADVERSARIAL, i + 1
-                )
+                self.agents["adversarial_" + str(i)] = Agent(AgentType.ADVERSARIAL)
             else:
-                self.agents["truthful_" + str(i)] = Agent(AgentType.TRUTHFUL, i + 1)
-
+                self.agents["truthful_" + str(i)] = Agent(AgentType.TRUTHFUL)
         # Initialize the Grid
         self.grid = Grid(config)
 

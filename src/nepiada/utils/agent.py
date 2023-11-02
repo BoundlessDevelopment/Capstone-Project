@@ -1,11 +1,14 @@
 import numpy as np
+import itertools
 from enum import Enum
 from utils.config import Config
+
 
 # Types of agents
 class AgentType(Enum):
     TRUTHFUL = 1
     ADVERSARIAL = 2
+
 
 class Entity:  # physical/external base state of all entities
     def __init__(self):
@@ -15,11 +18,12 @@ class Entity:  # physical/external base state of all entities
         # physical velocity - we can probably add this information when communicating with other agents
         self.p_vel = None
 
-class Agent(Entity):  # properties of agent entities
-    def __init__(self, type, uid):
-        super().__init__()
 
-        print("Agent with uid " + str(uid) + " has been initialized")
+class Agent(Entity):  # properties of agent entities
+    agent_id = itertools.count(1)
+
+    def __init__(self, type):
+        super().__init__()
 
         # Randomize the position of the agent, p_pos is stored as [x_coor, y_coor] of the agent
         self.p_pos = np.random.randint(low=0, high=Config.size, size=2)
@@ -34,5 +38,6 @@ class Agent(Entity):  # properties of agent entities
         self.blind = False
 
         # unique agent id as int
-        self.uid = uid
-    
+        self.uid = next(Agent.agent_id)
+
+        print("Agent with uid " + str(self.uid) + " has been initialized")
