@@ -1,30 +1,29 @@
 from utils.grid import Grid
-from utils.config import Config
 from utils.agent import Agent, AgentType
 
-class World():
-    def __init__(self):
+
+class World:
+    def __init__(self, config):
         print("World has been initialized")
 
         # Initialize the agents
-        self.num_agents = Config.num_good_agents + Config.num_adversarial_agents
-        self.agents = []
+        self.num_agents = config.num_good_agents + config.num_adversarial_agents
+        self.agents = {}
         for i in range(self.num_agents):
-            if i < Config.num_adversarial_agents:
-                self.agents.append(Agent(AgentType.ADVERSARIAL))
+            if i < config.num_adversarial_agents:
+                self.agents["adversarial_" + str(i)] = Agent(AgentType.ADVERSARIAL)
             else:
-                self.agents.append(Agent(AgentType.TRUTHFUL))
-
+                self.agents["truthful_" + str(i)] = Agent(AgentType.TRUTHFUL)
         # Initialize the Grid
-        self.grid = Grid()
+        self.grid = Grid(config)
 
         # Update the grid with agents position
         self.grid.update_grid(self.agents)
         self.grid.print_grid()
 
         ## The target where all the drones want to reach
-        self.target_x = Config.size / 2
-        self.target_y = Config.size / 2
+        self.target_x = config.size / 2
+        self.target_y = config.size / 2
 
     # return all entities in the world
     @property
