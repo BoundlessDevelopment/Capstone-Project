@@ -168,10 +168,8 @@ class nepiada(ParallelEnv):
         observations = self.observations
         self.state = observations
 
-        # Thanos: Uses infos for communications? - How? @HP
+        # TODO: Figure some utility for this. Not using for anything as of now
         infos = {agent: {} for agent in self.agents}
-
-        # TODO: Need to add information to infos
 
         if self.render_mode == "human":
             self.render()

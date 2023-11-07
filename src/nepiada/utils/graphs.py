@@ -1,8 +1,13 @@
 # This file implements the communication and observation graphs inspired from Gadjov and Pavel et. al.
 
+import matplotlib.pyplot as plt
 import numpy as np
+import time
+
+# Local imports
 from utils.config import Config
 from utils.agent import Agent, AgentType
+
 
 class Graph():
     def __init__(self, config):
@@ -17,6 +22,7 @@ class Graph():
 
         ## An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in range(self.num_agents)}
+
 
 
     def update_graphs(self, agents):
@@ -40,15 +46,19 @@ class Graph():
                     if (distance < self.observation_radius):
                         self.obs[agent.uid].append(other_agent.uid)
 
-
             # Update communication graph here
             # Nothing to do
 
         return
 
     def render_graph(self):
-        #TODO: Implement visuals
-        pass
+        #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
+        print("-----------")
+        for agent in range(self.num_agents):
+            print("Agent", agent, " observes: ", self.obs[agent])
+        print("-----------")
+
+
 
     def reset_graphs(self):
         self.comm = {agent: [] for agent in range(config.num_good_agents + config.num_adversarial_agents)}

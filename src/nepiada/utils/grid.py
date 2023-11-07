@@ -9,9 +9,10 @@ class Grid():
         self.dim = config.size
         self.config = config
 
-        self.state = np.zeros((self.dim, self.dim), dtype=int)
+        self.state = np.full((self.dim, self.dim), -1, dtype=int)
 
     def update_grid(self, agents):
+        #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
         for _, agent in agents.items():
             x_coord = agent.p_pos[0]
             y_coord = agent.p_pos[1]
