@@ -1,4 +1,5 @@
 from utils.grid import Grid
+from utils.graphs import Graph
 from utils.agent import Agent, AgentType
 
 
@@ -17,9 +18,15 @@ class World:
         # Initialize the Grid
         self.grid = Grid(config)
 
-        # Update the grid with agents position
+        # Initialize the graphs
+        self.graph = Graph(config)
+
+        # Update the grid with agent's position
         self.grid.update_grid(self.agents)
         self.grid.print_grid()
+
+        # Update the graphs with agent's position
+        self.graph.update_graph(self.agents)
 
         ## The target where all the drones want to reach
         self.target_x = config.size / 2

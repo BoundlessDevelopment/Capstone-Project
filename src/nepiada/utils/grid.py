@@ -11,14 +11,6 @@ class Grid():
 
         self.state = np.zeros((self.dim, self.dim), dtype=int)
 
-        ## An adjacency list for which agent can communicate with each other
-        ## Will need to build it from config data
-        self.Gc = {}
-
-        ## An adjacency list for which agent can observe each other
-        ## Will need to build it from config data
-        self.Go = {}
-
     def update_grid(self, agents):
         for _, agent in agents.items():
             x_coord = agent.p_pos[0]
