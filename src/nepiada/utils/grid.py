@@ -58,7 +58,7 @@ class Grid():
         return 0
 
     ## For debug
-    def print_grid(self):
+    def render_grid(self):
         print("---------------")
         for row in self.state:
             print(row)

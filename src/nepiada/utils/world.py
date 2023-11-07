@@ -23,10 +23,10 @@ class World:
 
         # Update the grid with agent's position
         self.grid.update_grid(self.agents)
-        self.grid.print_grid()
+        self.grid.render_grid()
 
         # Update the graphs with agent's position
-        self.graph.update_graph(self.agents)
+        self.graph.update_graphs(self.agents)
 
         ## The target where all the drones want to reach
         self.target_x = config.size / 2
