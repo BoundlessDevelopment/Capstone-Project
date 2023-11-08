@@ -172,7 +172,7 @@ class nepiada(ParallelEnv):
         # Assert that number of actions are equal to the number of agents
         assert len(actions) == len(self.agents)
 
-        # I have left them here for debugging
+        # TODO: Need to fix movement of drone
         print("Before update:", self.world.get_agent("adversarial_0").p_pos, " action:", actions["adversarial_0"])
         # Update drone positions
         self.move_drones(actions)

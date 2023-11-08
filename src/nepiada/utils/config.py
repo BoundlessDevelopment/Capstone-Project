@@ -30,7 +30,8 @@ class Config:
     obs_radius: int = 5
     full_communication: bool = True
 
-    # Agent update parameters
-    possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)} # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
+    # Agent update parameters 
+    # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
+    possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)} 
 
 
