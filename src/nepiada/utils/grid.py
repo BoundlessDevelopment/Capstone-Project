@@ -19,6 +19,9 @@ class Grid():
             # commenting this out for now until we have a better way to render
             # self.state[x_coord][y_coord] = agent.uid if agent.type == AgentType.TRUTHFUL else -agent.uid
             self.state[x_coord][y_coord] = agent.uid
+
+    def reset_grid(self):
+        self.state = np.full((self.dim, self.dim), -1, dtype=int)
     
     def move_drone(self, agent, action):
         """

@@ -55,7 +55,7 @@ class nepiada(ParallelEnv):
 
         self.render_mode = render_mode
 
-        # TODO: Need to make a grid and initialize agents - currently just adding all agents
+        # Initializing agents and grid
         self.world = World(config)
 
         # Add IDs to possible agents
@@ -92,17 +92,17 @@ class nepiada(ParallelEnv):
             return
         elif self.render_mode == "human":
             # Temporary to print grid for debug purposes until we have a better way to render.
-            self.world.grid.render_grid()
+            # self.world.grid.render_grid()
             self.world.graph.render_graph()
+            return
 
-    def observe(self, agent):
+    def observe(self, agent_name):
         """
-        Observe should return the observation of the specified agent. This function
-        should return a sane observation (though not necessarily the most up to date possible)
-        at any time after reset() is called.
+        Observe should return the agents within the observation radius of the specified agent.
+        Param: Unique agent string identifier: e.g. 'adversarial_0'
+        Return: An array of agents who's position it can directly observe
         """
-        # observation of one agent is the previous state of the other
-        return np.array(self.observations[agent])
+        return np.array(self.world.graph.obs[agent_name])
 
     def close(self):
         """
@@ -125,10 +125,11 @@ class nepiada(ParallelEnv):
 
         self.num_moves = 0
 
-        # TODO: Reinitialize the grid
+        # Reinitialize the grid
+        self.world.grid.reset_grid()
 
-        # Reset the observations
-        self.observations = {agent: None for agent in self.agents}
+        # Reset the comm and observation graphs
+        self.world.graph.reset_graphs()
 
         # Reset the rewards
         self.rewards = {agent: 0 for agent in self.agents}
@@ -136,9 +137,14 @@ class nepiada(ParallelEnv):
         # Reset the truncations
         self.truncations = {agent: False for agent in self.agents}
 
+        # Info will be used to pass information about comm and obs graphs
         self.infos = {agent: {} for agent in self.agents}
 
-        self.state = self.observations
+        # The observation returned below is the position of each agent on the grid at the moment
+        self.observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            self.observations[agent_name] = [agent.p_pos[0], agent.p_pos[1]] 
 
         return self.observations, self.infos
 
@@ -146,16 +152,32 @@ class nepiada(ParallelEnv):
         """
         step(action) takes in an action for each agent and should return the
         - observations
+            Get position of all agents in a particular agents perspective.
+            This would involve a NxN grid where each row indicates the agent's
+            belief of other agents positions
+
         - rewards
+            A 1xN reward vector where agent's uid corresponds to its reward index
+
         - terminations
+            A 1xN vector where each index corresponds to agent's uid.
+            True if a particular agent's episode has terminated, false otherwise
+
         - truncations
+
         - infos
+
         dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
         # Assert that number of actions are equal to the number of agents
         assert len(actions) == len(self.agents)
 
+        # I have left them here for debugging
+        print("Before update:", self.world.get_agent("adversarial_0").p_pos, " action:", actions["adversarial_0"])
+        # Update drone positions
         self.move_drones(actions)
+        print("After update:", self.world.get_agent("adversarial_0").p_pos)
+
         # We should update the rewards here, for now, we will just set everything to 0
         rewards = {agent: 0 for agent in self.agents}
 
@@ -164,17 +186,28 @@ class nepiada(ParallelEnv):
         env_truncation = self.num_moves >= Config.iterations
         truncations = {agent: env_truncation for agent in self.agents}
 
-        # TODO: Update observation
-        observations = self.observations
-        self.state = observations
+        # Update the observation and communication graphs at each iteration
+        # Note: Currently only the observation graph will be updated as it uses a dynamic observation radius concept
+        #       The communication graph remains static as per the environment specifications
+        self.world.update_graphs()
 
-        # TODO: Figure some utility for this. Not using for anything as of now
-        infos = {agent: {} for agent in self.agents}
+        # The observation returned in 'step' function is the current position of all agents
+        # Note this is different from observation graph!
+        self.observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            self.observations[agent_name] = [agent.p_pos[0], agent.p_pos[1]] 
+
+        # Info will be used to pass information about comm and obs graphs
+        self.infos = {agent_name: {} for agent_name in self.agents}
+        for agent_name in self.agents:
+            self.infos[agent_name]["obs"] = self.world.graph.obs[agent_name]
+            self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
 
         if self.render_mode == "human":
             self.render()
 
-        return observations, rewards, terminations, truncations, infos
+        return self.observations, rewards, terminations, truncations, self.infos
 
     def move_drones(self, actions):
         """
@@ -201,3 +234,4 @@ class nepiada(ParallelEnv):
             if status == -2:
                 # Drone collided with another drone
                 pass
+
