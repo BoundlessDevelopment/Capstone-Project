@@ -65,14 +65,15 @@ class Graph():
 
         return
 
-    def render_graph(self):
+    def render_graph(self, comm=True, obs=True):
         #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
         print("-----------")
-        for agent_name, other_agents in self.obs.items():
-            print("Agent", agent_name, " observes: ", other_agents)
-
-        for agent_name, other_agents in self.comm.items():
-            print("Agent", agent_name, " communicates with: ", other_agents)
+        if (obs):
+            for agent_name, other_agents in self.obs.items():
+                print("Agent", agent_name, " observes: ", other_agents)
+        if(comm):
+            for agent_name, other_agents in self.comm.items():
+                print("Agent", agent_name, " communicates with: ", other_agents)
         print("-----------")
 
 

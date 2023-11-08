@@ -21,7 +21,7 @@ class Config:
     # Initialization parameters
     dim : int = 2
     size : int = 20
-    iterations: int = 100
+    iterations : int = 100
     num_good_agents : int = 5
     num_adversarial_agents: int = 2
 
@@ -32,6 +32,7 @@ class Config:
 
     # Agent update parameters 
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
-    possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)} 
+    possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)}
+    empty_cell : int = -1
 
 

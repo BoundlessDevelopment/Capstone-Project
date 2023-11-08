@@ -92,8 +92,8 @@ class nepiada(ParallelEnv):
             return
         elif self.render_mode == "human":
             # Temporary to print grid for debug purposes until we have a better way to render.
-            # self.world.grid.render_grid()
-            self.world.graph.render_graph()
+            self.world.grid.render_grid()
+            self.world.graph.render_graph(comm=False)
             return
 
     def observe(self, agent_name):
@@ -173,10 +173,8 @@ class nepiada(ParallelEnv):
         assert len(actions) == len(self.agents)
 
         # TODO: Need to fix movement of drone
-        print("Before update:", self.world.get_agent("adversarial_0").p_pos, " action:", actions["adversarial_0"])
         # Update drone positions
         self.move_drones(actions)
-        print("After update:", self.world.get_agent("adversarial_0").p_pos)
 
         # We should update the rewards here, for now, we will just set everything to 0
         rewards = {agent: 0 for agent in self.agents}
@@ -219,12 +217,18 @@ class nepiada(ParallelEnv):
         for agent_id in self.agents:
             agent = self.world.agents[agent_id]
             action = actions[agent_id]
+            # print("Before update:", self.world.get_agent(agent_id).p_pos, " action:", action)
             status = self.world.grid.move_drone(agent, action)
             if status == -2:
                 collided_drones.append(agent_id)
+                # print("Position was occupied")
             elif status == -1:
                 # Drone collided with boundary
+                # print("Position was not valid")
                 pass
+            else:
+                pass
+                # print("After update:", self.world.get_agent(agent_id).p_pos, " action:", action)
 
         # Check collided drones in reverse to see if moving them is possible in this step
         for agent_id in reversed(collided_drones):

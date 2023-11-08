@@ -9,7 +9,7 @@ class Grid():
         self.dim = config.size
         self.config = config
 
-        self.state = np.full((self.dim, self.dim), -1, dtype=int)
+        self.state = np.full((self.dim, self.dim), config.empty_cell, dtype=int)
 
     def update_grid(self, agents):
         #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
@@ -21,7 +21,7 @@ class Grid():
             self.state[x_coord][y_coord] = agent.uid
 
     def reset_grid(self):
-        self.state = np.full((self.dim, self.dim), -1, dtype=int)
+        self.state = np.full((self.dim, self.dim), self.config.empty_cell, dtype=int)
     
     def move_drone(self, agent, action):
         """
@@ -47,11 +47,12 @@ class Grid():
             return -1
 
         # Check if the new position is occupied
-        if self.state[new_x_coord][new_y_coord] != 0:
+        if self.state[new_x_coord][new_y_coord] != self.config.empty_cell:
             return -2
 
         # Update the grid
-        self.state[x_coord][y_coord] = 0
+        self.state[x_coord][y_coord] = self.config.empty_cell
+
         # commenting this out for now until we have a better way to render
         # self.state[new_x_coord][new_y_coord] = agent.uid if agent.type == AgentType.TRUTHFUL else -agent.uid
         self.state[new_x_coord][new_y_coord] = agent.uid
