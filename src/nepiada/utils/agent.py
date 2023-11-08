@@ -1,5 +1,7 @@
 import numpy as np
 import itertools
+
+# Local imports
 from enum import Enum
 from utils.config import Config
 

@@ -1,3 +1,4 @@
+# Local imports
 from utils.grid import Grid
 from utils.graphs import Graph
 from utils.agent import Agent, AgentType

@@ -77,7 +77,6 @@ class nepiada(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         # Discrete movement, either up, down, stay, left or right.
-        # TODO: Make an ENUM for actions
         return Discrete(5)
 
     def render(self):
@@ -152,9 +151,7 @@ class nepiada(ParallelEnv):
         """
         step(action) takes in an action for each agent and should return the
         - observations
-            Get position of all agents in a particular agents perspective.
-            This would involve a NxN grid where each row indicates the agent's
-            belief of other agents positions
+            Returns the current state of the grid
 
         - rewards
             A 1xN reward vector where agent's uid corresponds to its reward index
@@ -164,15 +161,18 @@ class nepiada(ParallelEnv):
             True if a particular agent's episode has terminated, false otherwise
 
         - truncations
+            #TODO
 
         - infos
+            Is a dictionary with agent_names as the key. Each value in turn is a dict
+            of the form {"obs": [], "comm": []}
+            To access a agent's observation graph: infos[agent_name]["obs"]
+            To access a agent's observation graph: infos[agent_name]["comm"]
 
-        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
         # Assert that number of actions are equal to the number of agents
         assert len(actions) == len(self.agents)
 
-        # TODO: Need to fix movement of drone
         # Update drone positions
         self.move_drones(actions)
 
@@ -221,14 +221,9 @@ class nepiada(ParallelEnv):
             status = self.world.grid.move_drone(agent, action)
             if status == -2:
                 collided_drones.append(agent_id)
-                # print("Position was occupied")
             elif status == -1:
                 # Drone collided with boundary
-                # print("Position was not valid")
                 pass
-            else:
-                pass
-                # print("After update:", self.world.get_agent(agent_id).p_pos, " action:", action)
 
         # Check collided drones in reverse to see if moving them is possible in this step
         for agent_id in reversed(collided_drones):

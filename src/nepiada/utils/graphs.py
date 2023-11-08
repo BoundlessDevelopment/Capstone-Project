@@ -31,7 +31,6 @@ class Graph():
         self.obs = {agent: [] for agent in self.agents}
 
 
-
     def update_graphs(self, agents):
         # Update the agents
         self.agents = agents
@@ -64,6 +63,7 @@ class Graph():
         # Nothing to do, as we have defined communication graph to be static
 
         return
+
 
     def render_graph(self, comm=True, obs=True):
         #TODO (Arash): Should be replaced with a better rendering utility, example PyGame

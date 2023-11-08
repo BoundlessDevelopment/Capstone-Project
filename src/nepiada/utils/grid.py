@@ -1,4 +1,6 @@
 import numpy as np
+
+# Local imports
 from utils.config import Config
 from utils.agent import Agent, AgentType
 
