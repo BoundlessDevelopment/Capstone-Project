@@ -1,5 +1,7 @@
 import numpy as np
 import itertools
+
+# Local imports
 from enum import Enum
 from utils.config import Config
 
@@ -20,7 +22,8 @@ class Entity:  # physical/external base state of all entities
 
 
 class Agent(Entity):  # properties of agent entities
-    agent_id = itertools.count(1)
+    # Agent IDs begin from 0
+    agent_id = itertools.count(0)
 
     def __init__(self, type):
         super().__init__()
