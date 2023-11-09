@@ -1,13 +1,5 @@
 # This file implements the communication and observation graphs inspired from Gadjov and Pavel et. al.
-
-import matplotlib.pyplot as plt
 import numpy as np
-import time
-
-# Local imports
-from utils.config import Config
-from utils.agent import Agent, AgentType
-
 
 class Graph():
     def __init__(self, config, agents):

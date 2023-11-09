@@ -1,9 +1,5 @@
 import numpy as np
 
-# Local imports
-from utils.config import Config
-from utils.agent import Agent, AgentType
-
 class Grid():
     def __init__(self, config):
         print("Grid has been initialized")

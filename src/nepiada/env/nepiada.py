@@ -217,7 +217,6 @@ class nepiada(ParallelEnv):
         for agent_id in self.agents:
             agent = self.world.agents[agent_id]
             action = actions[agent_id]
-            # print("Before update:", self.world.get_agent(agent_id).p_pos, " action:", action)
             status = self.world.grid.move_drone(agent, action)
             if status == -2:
                 collided_drones.append(agent_id)
