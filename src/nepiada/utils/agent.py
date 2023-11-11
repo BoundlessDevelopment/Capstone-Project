@@ -43,4 +43,8 @@ class Agent(Entity):  # properties of agent entities
         # unique agent id as int
         self.uid = next(Agent.agent_id)
 
+        # Initialize beliefs as an empty dictionary.
+        # This will be populated with the positions that the agent believes itself and other agents to be in.
+        self.beliefs = {}
+
         print("Agent with uid " + str(self.uid) + " has been initialized")
