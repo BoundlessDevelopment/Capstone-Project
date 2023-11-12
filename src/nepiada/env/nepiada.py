@@ -10,6 +10,7 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 from utils.config import Config
 from utils.world import World
 
+import copy
 
 def parallel_env(config: Config):
     """
@@ -142,8 +143,14 @@ class nepiada(ParallelEnv):
         # The observation returned below is the position of each agent on the grid at the moment
         self.observations = {agent: None for agent in self.agents}
         for agent_name in self.agents:
-            agent = self.world.get_agent(agent_name)
-            self.observations[agent_name] = [agent.p_pos[0], agent.p_pos[1]] 
+            observation = {}
+            for observed_agent_name in self.agents:
+                observed_agent = self.world.get_agent(observed_agent_name)
+                if observed_agent_name in self.world.graph.obs[agent_name]:
+                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
+                else:
+                    observation[observed_agent_name] = None # Cannot be observed
+            self.observations[agent_name] = observation
 
         return self.observations, self.infos
 
@@ -201,20 +208,36 @@ class nepiada(ParallelEnv):
                 if observed_agent_name in self.world.graph.obs[agent_name]:
                     observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
                 else:
-                    observation[observed_agent_name] = None
+                    observation[observed_agent_name] = None # Cannot be observed
             self.observations[agent_name] = observation
 
         
-        # Update beliefs directly through the graphs
+        # First pass observed beliefs
         for agent_name in self.agents:
             beliefs = self.world.get_agent(agent_name).beliefs
             observation = self.observations[agent_name]
             for target_agent_name in self.agents:
                 if observation[target_agent_name]: # Can directly see
                     beliefs[target_agent_name] = observation[target_agent_name]
-                else: # Must guess where the agent is via communication
-                    pass
-        
+                else: # Must estimate where the agent is via communication
+                    beliefs[target_agent_name] = None
+
+        # Second pass communicated beliefs
+        for agent_name in self.agents:
+            beliefs = self.world.get_agent(agent_name).beliefs
+            observation = self.observations[agent_name]
+            for target_agent_name in self.agents:
+                if not observation[target_agent_name]: # Must estimate where the agent is via communication
+                    val_x, val_y = [],[]
+                    for helpful_agent in self.world.graph.comm[agent_name]:
+                        helpful_beliefs = copy.deepcopy(self.world.get_agent(helpful_agent).beliefs)
+                        #TODO add noise from our noise class if helpful_agent is adversarial  
+                        if helpful_beliefs[target_agent_name]:
+                            val_x.append(helpful_beliefs[target_agent_name][0])
+                            val_y.append(helpful_beliefs[target_agent_name][1])
+                    data_points = len(val_x)
+                    if data_points:
+                        beliefs[target_agent_name] = (sum(val_x)/data_points, sum(val_y)/data_points)
 
         # Info will be used to pass information about comm and obs graphs and beliefs
         self.infos = {agent_name: {} for agent_name in self.agents}
