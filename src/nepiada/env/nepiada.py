@@ -168,6 +168,7 @@ class nepiada(ParallelEnv):
             of the form {"obs": [], "comm": [], "beliefs": []}
             To access a agent's observation graph: infos[agent_name]["obs"]
             To access a agent's observation graph: infos[agent_name]["comm"]
+            To access a agent's beliefs dictionary: infos[agent_name]["beliefs"]
 
         """
         # Assert that number of actions are equal to the number of agents
@@ -191,10 +192,29 @@ class nepiada(ParallelEnv):
 
         # The observation returned in 'step' function is the current position of all agents
         # Note this is different from observation graph!
+        # Each agent is able to directly attain the position of every agent in it's observation graph
         self.observations = {agent: None for agent in self.agents}
         for agent_name in self.agents:
-            agent = self.world.get_agent(agent_name)
-            self.observations[agent_name] = [agent.p_pos[0], agent.p_pos[1]] 
+            observation = {}
+            for observed_agent_name in self.agents:
+                observed_agent = self.world.get_agent(observed_agent_name)
+                if observed_agent_name in self.world.graph.obs[agent_name]:
+                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
+                else:
+                    observation[observed_agent_name] = None
+            self.observations[agent_name] = observation
+
+        
+        # Update beliefs directly through the graphs
+        for agent_name in self.agents:
+            beliefs = self.world.get_agent(agent_name).beliefs
+            observation = self.observations[agent_name]
+            for target_agent_name in self.agents:
+                if observation[target_agent_name]: # Can directly see
+                    beliefs[target_agent_name] = observation[target_agent_name]
+                else: # Must guess where the agent is via communication
+                    pass
+        
 
         # Info will be used to pass information about comm and obs graphs and beliefs
         self.infos = {agent_name: {} for agent_name in self.agents}
