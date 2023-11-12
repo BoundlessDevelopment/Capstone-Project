@@ -165,7 +165,7 @@ class nepiada(ParallelEnv):
 
         - infos
             Is a dictionary with agent_names as the key. Each value in turn is a dict
-            of the form {"obs": [], "comm": []}
+            of the form {"obs": [], "comm": [], "beliefs": []}
             To access a agent's observation graph: infos[agent_name]["obs"]
             To access a agent's observation graph: infos[agent_name]["comm"]
 
@@ -196,11 +196,12 @@ class nepiada(ParallelEnv):
             agent = self.world.get_agent(agent_name)
             self.observations[agent_name] = [agent.p_pos[0], agent.p_pos[1]] 
 
-        # Info will be used to pass information about comm and obs graphs
+        # Info will be used to pass information about comm and obs graphs and beliefs
         self.infos = {agent_name: {} for agent_name in self.agents}
         for agent_name in self.agents:
             self.infos[agent_name]["obs"] = self.world.graph.obs[agent_name]
             self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
+            self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
 
         if self.render_mode == "human":
             self.render()
