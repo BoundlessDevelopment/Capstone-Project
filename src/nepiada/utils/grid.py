@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt 
+from IPython.display import display, clear_output
+from .agent import AgentType
 
 class Grid():
     def __init__(self, config):
@@ -6,8 +9,20 @@ class Grid():
 
         self.dim = config.size
         self.config = config
+        _, self.state_ax = plt.subplots(figsize=(5, 5))
+        plt.ion()
 
         self.state = np.full((self.dim, self.dim), config.empty_cell, dtype=int)
+        self.uid_to_type = {}
+
+    def save_agent_types(self,agents): 
+        for agent_name, agent in agents.items(): 
+            self.uid_to_type[agent.uid] = agent.type 
+
+            print(agent.uid)
+
+    def get_cell_size(self,width): 
+     return width // self.dim
 
     def update_grid(self, agents):
         #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
@@ -59,10 +74,3 @@ class Grid():
         agent.p_pos = (new_x_coord, new_y_coord)
 
         return 0
-
-    ## For debug
-    def render_grid(self):
-        print("---------------")
-        for row in self.state:
-            print(row)
-        print("---------------")

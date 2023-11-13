@@ -9,7 +9,7 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
 from utils.config import Config
 from utils.world import World
-
+import pygame 
 
 def parallel_env(config: Config):
     """
@@ -91,8 +91,7 @@ class nepiada(ParallelEnv):
             return
         elif self.render_mode == "human":
             # Temporary to print grid for debug purposes until we have a better way to render.
-            self.world.grid.render_grid()
-            self.world.graph.render_graph(comm=False)
+            self.world.graph.render_graph(type='obs')
             return
 
     def observe(self, agent_name):
@@ -109,6 +108,7 @@ class nepiada(ParallelEnv):
         or any other environment data which should not be kept around after the
         user is no longer using the environment.
         """
+        pygame.quit()
         pass
 
     def reset(self, seed=None, options=None):

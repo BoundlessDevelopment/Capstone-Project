@@ -1,8 +1,11 @@
 # This file implements the communication and observation graphs inspired from Gadjov and Pavel et. al.
 import numpy as np
+import matplotlib.pyplot as plt 
+import pygame 
+from .anim_consts import * 
 
 class Graph():
-    def __init__(self, config, agents):
+    def __init__(self, config, agents, screen=None, cell_size=0):
         print("Graphs have been initialized")
 
         self.dim = config.size
@@ -11,6 +14,10 @@ class Graph():
         self.full_communication = config.full_communication
         self.observation_radius = config.obs_radius
         self.num_agents = config.num_good_agents + config.num_adversarial_agents
+        self.obs_arrows = []
+        self.screen = screen 
+        self.clock = pygame.time.Clock()
+        self.cell_size = cell_size
 
         ## An adjacency list for which agent can communicate with each other
         if self.full_communication:
@@ -56,18 +63,65 @@ class Graph():
 
         return
 
+    def _draw_arrow(self, color, start, end, head_size=10):
+        pygame.draw.line(self.screen, color, start, end, 1)
+        rotation = np.degrees(np.arctan2(start[1]-end[1], end[0]-start[0])) + 90
+        pygame.draw.polygon(self.screen, color, ((end[0] + head_size * np.sin(np.radians(rotation)), 
+                                             end[1] + head_size * np.cos(np.radians(rotation))),
+                                            (end[0] + head_size * np.sin(np.radians(rotation - 120)), 
+                                             end[1] + head_size * np.cos(np.radians(rotation - 120))),
+                                            (end[0] + head_size * np.sin(np.radians(rotation + 120)), 
+                                             end[1] + head_size * np.cos(np.radians(rotation + 120)))))
+        
 
-    def render_graph(self, comm=True, obs=True):
-        #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
-        print("-----------")
-        if (obs):
-            for agent_name, other_agents in self.obs.items():
-                print("Agent", agent_name, " observes: ", other_agents)
-        if(comm):
-            for agent_name, other_agents in self.comm.items():
-                print("Agent", agent_name, " communicates with: ", other_agents)
-        print("-----------")
+    def _draw_agents(self,radius=2):
+        # Draw the agents and the observations
+        for agent_name, agent in self.agents.items():
+            # Convert grid positions to pixel positions for drawing
+            agent_pixel_pos = (agent.p_pos[0] * self.cell_size + self.cell_size // 2, agent.p_pos[1] * self.cell_size + self.cell_size // 2)
+            color = BLUE if 'truthful' in agent_name else RED 
+            pygame.draw.circle(self.screen, color, agent_pixel_pos, self.cell_size // radius)
+    
+    # Function to draw the grid
+    def _draw_grid(self):
+        self.screen.fill(WHITE)
+        for x in range(0, WIDTH, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (x, 0), (x, HEIGHT))
+        for y in range(0, HEIGHT, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (0, y), (WIDTH, y))
+        
+    def render_graph(self,type='obs'): 
+        if self.screen is None: 
+            print('Not drawing anything ...')
+            return 
+        self._draw_grid()
+        self._draw_agents(radius=2)
 
+        # Draw the agents and the observations
+        observations = self.obs if type=='obs' else self.comm 
+
+        for observer_name, observed_list in observations.items():
+            for observed_name in observed_list:
+                if observed_name in self.agents:
+                    observed = self.agents[observed_name]
+                    observer = self.agents[observer_name]
+                    observed_pixel_pos = (observed.p_pos[0] * self.cell_size + self.cell_size // 2, observed.p_pos[1] * self.cell_size + self.cell_size // 2)
+                    observer_pixel_pos = (observer.p_pos[0] * self.cell_size + self.cell_size // 2, observer.p_pos[1] * self.cell_size + self.cell_size // 2)
+
+                    self._draw_arrow(BLACK, 
+                                     observer_pixel_pos, 
+                                     observed_pixel_pos, 
+                                     head_size=5)
+
+        # Update the display
+        pygame.display.flip()
+        pygame.time.delay(500)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit() 
+
+        # Cap the frame rate
+        self.clock.tick(FPS)
 
     def reset_graphs(self):
         if self.full_communication:
