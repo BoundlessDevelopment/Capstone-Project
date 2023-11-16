@@ -210,8 +210,7 @@ class nepiada(ParallelEnv):
                 else:
                     observation[observed_agent_name] = None # Cannot be observed
             self.observations[agent_name] = observation
-
-        
+            
         # First pass observed beliefs
         for agent_name in self.agents:
             beliefs = self.world.get_agent(agent_name).beliefs
@@ -223,21 +222,31 @@ class nepiada(ParallelEnv):
                     beliefs[target_agent_name] = None
 
         # Second pass communicated beliefs
+
+        incoming_all_messages = {}
+        
         for agent_name in self.agents:
             beliefs = self.world.get_agent(agent_name).beliefs
             observation = self.observations[agent_name]
+
+            incoming_agent_messages = {}
+
             for target_agent_name in self.agents:
+
+                incoming_communcation_messages = {}
+
                 if not observation[target_agent_name]: # Must estimate where the agent is via communication
-                    val_x, val_y = [],[]
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         helpful_beliefs = copy.deepcopy(self.world.get_agent(helpful_agent).beliefs)
                         #TODO add noise from our noise class if helpful_agent is adversarial  
                         if helpful_beliefs[target_agent_name]:
-                            val_x.append(helpful_beliefs[target_agent_name][0])
-                            val_y.append(helpful_beliefs[target_agent_name][1])
-                    data_points = len(val_x)
-                    if data_points:
-                        beliefs[target_agent_name] = (sum(val_x)/data_points, sum(val_y)/data_points)
+                            incoming_communcation_messages[helpful_agent] = (helpful_beliefs[target_agent_name][0], helpful_beliefs[target_agent_name][1])
+                
+                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
+
+            incoming_all_messages[agent_name] = incoming_agent_messages
+
+                        
 
         # Info will be used to pass information about comm and obs graphs and beliefs
         self.infos = {agent_name: {} for agent_name in self.agents}
@@ -245,6 +254,7 @@ class nepiada(ParallelEnv):
             self.infos[agent_name]["obs"] = self.world.graph.obs[agent_name]
             self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
             self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
+            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[agent_name]
 
         if self.render_mode == "human":
             self.render()
