@@ -9,6 +9,7 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
 from utils.config import Config
 from utils.world import World
+from utils.noise import GaussianNoise 
 
 import copy
 
@@ -58,6 +59,8 @@ class nepiada(ParallelEnv):
 
         # Initializing agents and grid
         self.world = World(config)
+
+        self.noise = GaussianNoise()
 
         # Add IDs to possible agents
         for id in self.world.agents:
@@ -112,6 +115,61 @@ class nepiada(ParallelEnv):
         """
         pass
 
+    def get_observations(self):
+        """
+        The n^2 observation structure returned below are the coordinates of each agents that each agent can directly observe
+        observations[i][j] is the location that drone i sees drone j at
+        """
+        observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            observation = {}
+            for observed_agent_name in self.agents:
+                observed_agent = self.world.get_agent(observed_agent_name)
+                if observed_agent_name in self.world.graph.obs[agent_name]:
+                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
+                else:
+                    observation[observed_agent_name] = None # Cannot be observed
+            observations[agent_name] = observation
+        return observations
+    
+    def get_all_messages(self):
+        """
+        The n^3 message structure returned below are the coordinates that each drone receives from a drone about another drone
+        observations[i][j][k] is the location that drone i is told by drone k where drone k is
+        """
+        incoming_all_messages = {}
+        for agent_name in self.agents:
+            beliefs = self.world.get_agent(agent_name).beliefs
+            observation = self.observations[agent_name]
+
+            incoming_agent_messages = {}
+
+            for target_agent_name in self.agents:
+
+                incoming_communcation_messages = {}
+
+                if not observation[target_agent_name]: # Must estimate where the agent is via communication
+                    for helpful_agent in self.world.graph.comm[agent_name]:  
+                        helpful_beliefs = self.noise.add_noise(self.world.get_agent(helpful_agent).beliefs)
+                        if helpful_beliefs[target_agent_name]:
+                            incoming_communcation_messages[helpful_agent] = (helpful_beliefs[target_agent_name][0], helpful_beliefs[target_agent_name][1])
+                
+                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
+
+            incoming_all_messages[agent_name] = incoming_agent_messages
+        return incoming_agent_messages
+    
+    def update_beliefs(self):
+        # First pass observed beliefs
+        for agent_name in self.agents:
+            beliefs = self.world.get_agent(agent_name).beliefs
+            observation = self.observations[agent_name]
+            for target_agent_name in self.agents:
+                if observation[target_agent_name]: # Can directly see
+                    beliefs[target_agent_name] = observation[target_agent_name]
+                else: # Must estimate where the agent is via communication
+                    beliefs[target_agent_name] = None
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -140,17 +198,10 @@ class nepiada(ParallelEnv):
         # Info will be used to pass information about comm and obs graphs
         self.infos = {agent: {} for agent in self.agents}
 
-        # The observation returned below is the position of each agent on the grid at the moment
-        self.observations = {agent: None for agent in self.agents}
-        for agent_name in self.agents:
-            observation = {}
-            for observed_agent_name in self.agents:
-                observed_agent = self.world.get_agent(observed_agent_name)
-                if observed_agent_name in self.world.graph.obs[agent_name]:
-                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
-                else:
-                    observation[observed_agent_name] = None # Cannot be observed
-            self.observations[agent_name] = observation
+        # The observation structure returned below are the coordinates of each agents that each agent can directly observe
+        self.observations = self.get_observations()
+
+        self.update_beliefs()
 
         return self.observations, self.infos
 
@@ -158,7 +209,7 @@ class nepiada(ParallelEnv):
         """
         step(action) takes in an action for each agent and should return the
         - observations
-            Returns the current state of the grid
+            The observation structure returned below are the coordinates of each agents that each agent can directly observe
 
         - rewards
             A 1xN reward vector where agent's uid corresponds to its reward index
@@ -172,10 +223,10 @@ class nepiada(ParallelEnv):
 
         - infos
             Is a dictionary with agent_names as the key. Each value in turn is a dict
-            of the form {"obs": [], "comm": [], "beliefs": []}
-            To access a agent's observation graph: infos[agent_name]["obs"]
+            of the form {"comm": [], "beliefs": [], "incoming_all_messages": []}
             To access a agent's observation graph: infos[agent_name]["comm"]
             To access a agent's beliefs dictionary: infos[agent_name]["beliefs"]
+            To access a agent's incoming_all_messages dictionary: infos[agent_name]["incoming_all_messages"]
 
         """
         # Assert that number of actions are equal to the number of agents
@@ -197,61 +248,16 @@ class nepiada(ParallelEnv):
         #       The communication graph remains static as per the environment specifications
         self.world.update_graphs()
 
-        # The observation returned in 'step' function is the current position of all agents
-        # Note this is different from observation graph!
-        # Each agent is able to directly attain the position of every agent in it's observation graph
-        self.observations = {agent: None for agent in self.agents}
-        for agent_name in self.agents:
-            observation = {}
-            for observed_agent_name in self.agents:
-                observed_agent = self.world.get_agent(observed_agent_name)
-                if observed_agent_name in self.world.graph.obs[agent_name]:
-                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
-                else:
-                    observation[observed_agent_name] = None # Cannot be observed
-            self.observations[agent_name] = observation
+        self.observations = self.get_observations()
             
-        # First pass observed beliefs
-        for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
-            observation = self.observations[agent_name]
-            for target_agent_name in self.agents:
-                if observation[target_agent_name]: # Can directly see
-                    beliefs[target_agent_name] = observation[target_agent_name]
-                else: # Must estimate where the agent is via communication
-                    beliefs[target_agent_name] = None
+        self.update_beliefs()
 
         # Second pass communicated beliefs
-
-        incoming_all_messages = {}
-        
-        for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
-            observation = self.observations[agent_name]
-
-            incoming_agent_messages = {}
-
-            for target_agent_name in self.agents:
-
-                incoming_communcation_messages = {}
-
-                if not observation[target_agent_name]: # Must estimate where the agent is via communication
-                    for helpful_agent in self.world.graph.comm[agent_name]:
-                        helpful_beliefs = copy.deepcopy(self.world.get_agent(helpful_agent).beliefs)
-                        #TODO add noise from our noise class if helpful_agent is adversarial  
-                        if helpful_beliefs[target_agent_name]:
-                            incoming_communcation_messages[helpful_agent] = (helpful_beliefs[target_agent_name][0], helpful_beliefs[target_agent_name][1])
-                
-                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
-
-            incoming_all_messages[agent_name] = incoming_agent_messages
-
+        incoming_all_messages = self.get_all_messages()
                         
-
         # Info will be used to pass information about comm and obs graphs and beliefs
         self.infos = {agent_name: {} for agent_name in self.agents}
         for agent_name in self.agents:
-            self.infos[agent_name]["obs"] = self.world.graph.obs[agent_name]
             self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
             self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
             self.infos[agent_name]["incoming_messages"] = incoming_all_messages[agent_name]
