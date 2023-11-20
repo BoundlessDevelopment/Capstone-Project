@@ -155,19 +155,6 @@ class nepiada(ParallelEnv):
 
             incoming_all_messages[agent_name] = incoming_agent_messages
         return incoming_agent_messages
-    
-    def update_beliefs(self):
-        """
-        Updating the 2xN structure holds where each agent believes that itself and each other agent is located
-        """
-        for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
-            observation = self.observations[agent_name]
-            for target_agent_name in self.agents:
-                if observation[target_agent_name]: # Can directly see
-                    beliefs[target_agent_name] = observation[target_agent_name]
-                else: # Must estimate where the agent is via communication
-                    beliefs[target_agent_name] = None
 
     def initialize_beliefs(self):
         """
@@ -258,8 +245,6 @@ class nepiada(ParallelEnv):
 
         self.observations = self.get_observations()
             
-
-
         # Second pass communicated beliefs
         incoming_all_messages = self.get_all_messages()
                         
