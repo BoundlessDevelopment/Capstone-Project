@@ -1,6 +1,8 @@
 # TODO: Make an enum
 # Default: 0 - stay, 1 - up, 2 - down, 3 - left, 4 - right
 
+from utils.noise import GaussianNoise 
+
 class Config:
     """ 
     We allow our environment to be customizable based on the user's requirements.
@@ -25,10 +27,13 @@ class Config:
     num_good_agents : int = 5
     num_adversarial_agents: int = 2
 
+
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 5
     full_communication: bool = True
+
+    noise = GaussianNoise()
 
     # Agent update parameters 
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
