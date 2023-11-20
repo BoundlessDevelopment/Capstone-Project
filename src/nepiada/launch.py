@@ -9,6 +9,7 @@ observations, infos = env.reset()
 
 def update_beliefs(env):
     """
+    CURRENTLY NOT IN USE
     Updating the 2xN structure holds where each agent believes that itself and each other agent is located
     """
     for agent_name in env.agents:
