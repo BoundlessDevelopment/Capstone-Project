@@ -9,7 +9,6 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
 from utils.config import Config
 from utils.world import World
-from utils.noise import GaussianNoise 
 
 import copy
 
@@ -59,8 +58,6 @@ class nepiada(ParallelEnv):
 
         # Initializing agents and grid
         self.world = World(config)
-
-        self.noise = GaussianNoise()
 
         # Add IDs to possible agents
         for id in self.world.agents:
@@ -117,7 +114,7 @@ class nepiada(ParallelEnv):
 
     def get_observations(self):
         """
-        The n^2 observation structure returned below are the coordinates of each agents that each agent can directly observe
+        The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
         observations[i][j] is the location that drone i sees drone j at
         """
         observations = {agent: None for agent in self.agents}
@@ -134,7 +131,7 @@ class nepiada(ParallelEnv):
     
     def get_all_messages(self):
         """
-        The n^3 message structure returned below are the coordinates that each drone receives from a drone about another drone
+        The 2xNxNxN message structure returned below are the coordinates that each drone receives from a drone about another drone
         observations[i][j][k] is the location that drone i is told by drone k where drone k is
         """
         incoming_all_messages = {}
@@ -150,7 +147,7 @@ class nepiada(ParallelEnv):
 
                 if not observation[target_agent_name]: # Must estimate where the agent is via communication
                     for helpful_agent in self.world.graph.comm[agent_name]:  
-                        helpful_beliefs = self.noise.add_noise(self.world.get_agent(helpful_agent).beliefs)
+                        helpful_beliefs = self.config.noise.add_noise(self.world.get_agent(helpful_agent).beliefs)
                         if helpful_beliefs[target_agent_name]:
                             incoming_communcation_messages[helpful_agent] = (helpful_beliefs[target_agent_name][0], helpful_beliefs[target_agent_name][1])
                 
@@ -160,7 +157,9 @@ class nepiada(ParallelEnv):
         return incoming_agent_messages
     
     def update_beliefs(self):
-        # First pass observed beliefs
+        """
+        Updating the 2xN structure holds where each agent believes that itself and each other agent is located
+        """
         for agent_name in self.agents:
             beliefs = self.world.get_agent(agent_name).beliefs
             observation = self.observations[agent_name]
@@ -195,7 +194,7 @@ class nepiada(ParallelEnv):
         # Reset the truncations
         self.truncations = {agent: False for agent in self.agents}
 
-        # Info will be used to pass information about comm and obs graphs
+        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent: {} for agent in self.agents}
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
@@ -224,7 +223,7 @@ class nepiada(ParallelEnv):
         - infos
             Is a dictionary with agent_names as the key. Each value in turn is a dict
             of the form {"comm": [], "beliefs": [], "incoming_all_messages": []}
-            To access a agent's observation graph: infos[agent_name]["comm"]
+            To access a agent's communcation graph: infos[agent_name]["comm"]
             To access a agent's beliefs dictionary: infos[agent_name]["beliefs"]
             To access a agent's incoming_all_messages dictionary: infos[agent_name]["incoming_all_messages"]
 
@@ -255,7 +254,7 @@ class nepiada(ParallelEnv):
         # Second pass communicated beliefs
         incoming_all_messages = self.get_all_messages()
                         
-        # Info will be used to pass information about comm and obs graphs and beliefs
+        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent_name: {} for agent_name in self.agents}
         for agent_name in self.agents:
             self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
