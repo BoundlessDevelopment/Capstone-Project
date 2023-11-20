@@ -169,6 +169,15 @@ class nepiada(ParallelEnv):
                 else: # Must estimate where the agent is via communication
                     beliefs[target_agent_name] = None
 
+    def initialize_beliefs(self):
+        """
+        Initializing the 2xN structure holds where each agent believes that itself and each other agent is located
+        """
+        for agent_name in self.agents:
+            beliefs = self.world.get_agent(agent_name).beliefs
+            for target_agent_name in self.agents:
+                    beliefs[target_agent_name] = None
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -200,7 +209,7 @@ class nepiada(ParallelEnv):
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
         self.observations = self.get_observations()
 
-        self.update_beliefs()
+        self.initialize_beliefs()
 
         return self.observations, self.infos
 
@@ -249,7 +258,7 @@ class nepiada(ParallelEnv):
 
         self.observations = self.get_observations()
             
-        self.update_beliefs()
+
 
         # Second pass communicated beliefs
         incoming_all_messages = self.get_all_messages()
