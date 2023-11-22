@@ -59,9 +59,10 @@ class nepiada(ParallelEnv):
         # Initializing agents and grid
         self.world = World(config)
 
-        # Add IDs to possible agents
-        for id in self.world.agents:
-            self.possible_agents.append(id)
+        # Add agent_names to possible agents
+        # Note that each name is unique and hence is an ID
+        for agent_name in self.world.agents:
+            self.possible_agents.append(agent_name)
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
@@ -240,8 +241,9 @@ class nepiada(ParallelEnv):
         # Update drone positions
         self.move_drones(actions)
 
-        # We should update the rewards here, for now, we will just set everything to 0
-        rewards = {agent: 0 for agent in self.agents}
+        # Get the updated rewards
+        # TODO: Account for large negative rewards for collision or off-boundary moves
+        self.rewards = self.get_rewards()
 
         terminations = {agent: False for agent in self.agents}
         self.num_moves += 1
@@ -268,7 +270,7 @@ class nepiada(ParallelEnv):
         if self.render_mode == "human":
             self.render()
 
-        return self.observations, rewards, terminations, truncations, self.infos
+        return self.observations, self.rewards, terminations, truncations, self.infos
 
     def move_drones(self, actions):
         """
@@ -277,22 +279,73 @@ class nepiada(ParallelEnv):
         # Drones that collided with another drone, for reprocessing
         collided_drones = []
 
-        for agent_id in self.agents:
-            agent = self.world.agents[agent_id]
-            action = actions[agent_id]
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            action = actions[agent_name]
             status = self.world.grid.move_drone(agent, action)
             if status == -2:
-                collided_drones.append(agent_id)
+                collided_drones.append(agent_name)
             elif status == -1:
                 # Drone collided with boundary
                 pass
 
         # Check collided drones in reverse to see if moving them is possible in this step
-        for agent_id in reversed(collided_drones):
-            agent = self.world.agents[agent_id]
-            action = actions[agent_id]
+        for agent_name in reversed(collided_drones):
+            agent = self.world.agents[agent_name]
+            action = actions[agent_name]
             status = self.world.grid.move_drone(agent, action)
             if status == -2:
                 # Drone collided with another drone
                 pass
+
+    def get_rewards(self):
+        """
+            This function assigns reward to all agents based on the following two criterias:
+
+            - global_arrangement_reward : The average distance of all agents from the target
+            - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
+
+            Refer to D. Gadjov and Pavel's paper for more details about it.
+
+            Returns: A dictionary with agent_name as key and reward as a value
+        """
+        rewards = {}
+
+        # Get the average distance of the agents from target
+        target_x = Config.size / 2
+        target_y = Config.size / 2
+        global_arrangement_reward = 0
+
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            distance = np.sqrt((agent.p_pos[0] - target_x)**2 + (agent.p_pos[1] - target_y)**2)
+            global_arrangement_reward += distance
+
+        global_arrangement_reward = global_arrangement_reward / len(self.agents)
+
+        # Add each agents reward based on their target neighbours
+        for agent_name in self.agents:
+            deviation_from_neighbours = 0
+            agent = self.world.agents[agent_name]
+            agent_x = agent.p_pos[0]
+            agent_y = agent.p_pos[1]
+            deviation_from_arrangement = 0
+            for neighbour_name, ideal_distance in agent.target_neighbour.items():
+                neighbour = self.world.agents[neighbour_name]
+                neighbour_x = neighbour.p_pos[0]
+                neighbour_y = neighbour.p_pos[1]
+                ideal_x = ideal_distance[0]
+                ideal_y = ideal_distance[1]
+                deviation_from_arrangement += np.sqrt((neighbour_x - agent_x - ideal_x)**2 + (neighbour_y - agent_y - ideal_y)**2)
+
+            # Compute the agent's net reward
+            rewards[agent_name] = (Config.global_reward_weight * global_arrangement_reward) + (Config.local_reward_weight * deviation_from_arrangement)
+        
+        return rewards
+
+
+
+
+
+
 

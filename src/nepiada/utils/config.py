@@ -32,17 +32,18 @@ class Config:
     num_good_agents : int = 6
     num_adversarial_agents: int = 2
 
-
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 5
     full_communication: bool = True
-
     noise = GaussianNoise()
+
 
     # Agent update parameters 
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
     possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)}
     empty_cell : int = -1
+    global_reward_weight : int = 0.5
+    local_reward_weight : int = 0.5
 
 
