@@ -11,7 +11,9 @@ class Config:
     dim: Dimension of the environment
     size: The size of each dimension of the environment
     iterations: Max number of iterations allowed
-    num_agents: Number of agents should NOT be prime to form a rectangular formation
+    
+    agent_grid_width: Width of the final agent formation, note the goal is to have a rectangular formation
+    agent_grid_height: Height of the final agent formation, note the goal is to have a rectangular formation
     num_good_agents: Number of truthful agents
     num_adversarial_agents: Number of rogue or un-truthful agents
 
@@ -24,20 +26,19 @@ class Config:
     # Initialization parameters
     dim : int = 2
     size : int = 20
-    iterations : int = 100
+    iterations : int = 5
 
     # Agent related parameterss
-    agent_grid_width : int = 4
+    agent_grid_width : int = 2
     agent_grid_height : int = 2
-    num_good_agents : int = 6
-    num_adversarial_agents: int = 2
+    num_good_agents : int = 3
+    num_adversarial_agents: int = 1
 
     # Graph update parameters
     dynamic_obs: bool = True
-    obs_radius: int = 5
+    obs_radius: int = 10
     full_communication: bool = True
     noise = GaussianNoise()
-
 
     # Agent update parameters 
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
@@ -45,5 +46,4 @@ class Config:
     empty_cell : int = -1
     global_reward_weight : int = 0.5
     local_reward_weight : int = 0.5
-
-
+    

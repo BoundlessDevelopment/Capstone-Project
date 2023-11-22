@@ -343,10 +343,3 @@ class nepiada(ParallelEnv):
             rewards[agent_name] = (Config.global_reward_weight * global_arrangement_reward) + (Config.local_reward_weight * deviation_from_arrangement)
         
         return rewards
-
-
-
-
-
-
-

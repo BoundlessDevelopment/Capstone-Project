@@ -11,7 +11,9 @@ class Config:
     dim: Dimension of the environment
     size: The size of each dimension of the environment
     iterations: Max number of iterations allowed
-    num_agents: Number of agents should NOT be prime to form a rectangular formation
+    
+    agent_grid_width: Width of the final agent formation, note the goal is to have a rectangular formation
+    agent_grid_height: Height of the final agent formation, note the goal is to have a rectangular formation
     num_good_agents: Number of truthful agents
     num_adversarial_agents: Number of rogue or un-truthful agents
 
@@ -38,12 +40,9 @@ class Config:
     full_communication: bool = True
     noise = GaussianNoise()
 
-
     # Agent update parameters 
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
     possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)}
     empty_cell : int = -1
     global_reward_weight : int = 0.5
     local_reward_weight : int = 0.5
-
-
