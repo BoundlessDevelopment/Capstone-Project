@@ -55,5 +55,7 @@ class Agent(Entity):  # properties of agent entities
     def set_target_neighbour(self, neighbour_name, distance):
         # The distance is a list of [ relative_x_pos, relative_y_pos ]
         assert len(distance) == 2
+        assert distance[0] < Config.size and distance[0] > -(Config.size)
+        assert distance[1] < Config.size and distance[1] > -(Config.size)
 
         self.target_neighbour[neighbour_name] = distance

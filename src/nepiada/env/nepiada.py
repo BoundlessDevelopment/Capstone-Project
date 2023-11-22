@@ -336,6 +336,7 @@ class nepiada(ParallelEnv):
                 neighbour_y = neighbour.p_pos[1]
                 ideal_x = ideal_distance[0]
                 ideal_y = ideal_distance[1]
+
                 deviation_from_arrangement += np.sqrt((neighbour_x - agent_x - ideal_x)**2 + (neighbour_y - agent_y - ideal_y)**2)
 
             # Compute the agent's net reward
