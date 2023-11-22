@@ -94,6 +94,16 @@ class nepiada(ParallelEnv):
             # Temporary to print grid for debug purposes until we have a better way to render.
             self.world.grid.render_grid()
             self.world.graph.render_graph(comm=False)
+
+            # This is a debugging code
+            # TODO: Remove later
+            for agent_name, agent in self.world.agents.items():
+                print(agent_name, " has target neighbours: ")
+                for neighbour, distance in agent.target_neighbour.items():
+                    print(neighbour, distance)
+
+                print("----------------------")
+
             return
 
     def observe(self, agent_name):

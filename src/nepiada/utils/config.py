@@ -11,6 +11,7 @@ class Config:
     dim: Dimension of the environment
     size: The size of each dimension of the environment
     iterations: Max number of iterations allowed
+    num_agents: Number of agents should NOT be prime to form a rectangular formation
     num_good_agents: Number of truthful agents
     num_adversarial_agents: Number of rogue or un-truthful agents
 
@@ -24,7 +25,11 @@ class Config:
     dim : int = 2
     size : int = 20
     iterations : int = 100
-    num_good_agents : int = 5
+
+    # Agent related parameterss
+    agent_grid_width : int = 4
+    agent_grid_height : int = 2
+    num_good_agents : int = 6
     num_adversarial_agents: int = 2
 
 
