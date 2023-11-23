@@ -259,7 +259,7 @@ class nepiada(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
         self.num_moves += 1
-        env_truncation = self.num_moves >= Config.iterations
+        env_truncation = self.num_moves >= self.config.iterations
         truncations = {agent: env_truncation for agent in self.agents}
 
         # Update the observation and communication graphs at each iteration
@@ -325,8 +325,8 @@ class nepiada(ParallelEnv):
         rewards = {}
 
         # Get the average distance of the agents from target
-        target_x = Config.size / 2
-        target_y = Config.size / 2
+        target_x = self.config.size / 2
+        target_y = self.config.size / 2
         global_arrangement_reward = 0
 
         for agent_name in self.agents:
@@ -359,8 +359,8 @@ class nepiada(ParallelEnv):
 
             # Compute the agent's net reward, note the negative sign
             rewards[agent_name] = -(
-                (Config.global_reward_weight * global_arrangement_reward)
-                + (Config.local_reward_weight * deviation_from_arrangement)
+                (self.config.global_reward_weight * global_arrangement_reward)
+                + (self.config.local_reward_weight * deviation_from_arrangement)
             )
 
         return rewards

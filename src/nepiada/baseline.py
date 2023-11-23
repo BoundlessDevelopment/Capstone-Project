@@ -1,7 +1,50 @@
 # Local imports
+import numpy as np
 import env.nepiada as nepiada
 from utils.config import BaselineConfig
 import pygame
+
+def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
+    """
+    This function calculates the cost value given the agent's beliefs.
+    Before calling this method, the agent's belief of itself should be updated
+    with it's intended new position.
+
+    It is calculated using a similar function to the cost function in
+    Diane and Prof. Pavel's Paper, however modified to the discrete space.
+    """
+    total_cost = 0
+    arrangement_cost = 0
+    target_neighbor_cost = 0
+
+    target_x = grid_size / 2
+    target_y = grid_size / 2
+
+    # Calculate the global arrangement cost
+    for curr_agent_name, agent_belief in beliefs.items():
+        if agent_belief is None:
+            # What do we do here?
+            continue
+        arrangement_cost += np.sqrt(
+            (agent_belief[0] - target_x) ** 2 + (agent_belief[1] - target_y) ** 2
+        )
+
+    arrangement_cost /= len(beliefs)
+
+    # Calculate the target neighbour cost
+    for curr_agent_name, target_relative_position in target_neighbours.items():
+        assert(beliefs[agent_name] is not None)
+        
+        curr_agent_position = beliefs[curr_agent_name]
+        agent_position = beliefs[agent_name]
+
+        if curr_agent_position is None:
+            # What do we do here?
+            continue
+        target_neighbor_cost += np.sqrt((curr_agent_position[0] - agent_position[0] - target_relative_position[0]) ** 2 + (curr_agent_position[1] - agent_position[1] - target_relative_position[1]) ** 2)
+
+    # Return cost, should this be weighted?
+    return arrangement_cost + target_neighbor_cost
 
 
 def create_beliefs_with_obs(agent_name, agent_instance, observations, all_agents):
