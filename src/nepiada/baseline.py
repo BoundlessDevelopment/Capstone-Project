@@ -4,6 +4,7 @@ import env.nepiada as nepiada
 from utils.config import BaselineConfig
 import pygame
 
+
 def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
     """
     This function calculates the cost value given the agent's beliefs.
@@ -33,15 +34,20 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
 
     # Calculate the target neighbour cost
     for curr_agent_name, target_relative_position in target_neighbours.items():
-        assert(beliefs[agent_name] is not None)
-        
+        assert beliefs[agent_name] is not None
+
         curr_agent_position = beliefs[curr_agent_name]
         agent_position = beliefs[agent_name]
 
         if curr_agent_position is None:
             # What do we do here?
             continue
-        target_neighbor_cost += np.sqrt((curr_agent_position[0] - agent_position[0] - target_relative_position[0]) ** 2 + (curr_agent_position[1] - agent_position[1] - target_relative_position[1]) ** 2)
+        target_neighbor_cost += np.sqrt(
+            (curr_agent_position[0] - agent_position[0] - target_relative_position[0])
+            ** 2
+            + (curr_agent_position[1] - agent_position[1] - target_relative_position[1])
+            ** 2
+        )
 
     # Return cost, should this be weighted?
     return arrangement_cost + target_neighbor_cost
