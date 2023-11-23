@@ -53,7 +53,7 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
     return arrangement_cost + target_neighbor_cost
 
 
-def create_beliefs_with_obs(agent_name, agent_instance, observations, all_agents):
+def create_beliefs_with_obs(agent_name, observations, all_agents):
     """
     Create a new beliefs dict with the agent's observations filled in as the
     groundtruth. If the agent has no observations of another agent,
@@ -66,8 +66,6 @@ def create_beliefs_with_obs(agent_name, agent_instance, observations, all_agents
             beliefs[agent_name] = observations[agent_name]
         else:
             beliefs[agent_name] = None
-
-    beliefs[agent_name] = agent_instance.p_pos
 
     return beliefs
 
@@ -103,13 +101,14 @@ def strip_extreme_values_and_update_beliefs(
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
+    # Create new beliefs dict with observation information
     new_beliefs = create_beliefs_with_obs(
         agent_name,
-        agent_instance,
         observations,
         env.agents,
         env.action_space(agent_name),
     )
+    # If there are incoming messages, process them and update beliefs
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,

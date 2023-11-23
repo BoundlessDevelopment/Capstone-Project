@@ -148,10 +148,9 @@ class nepiada(ParallelEnv):
             for target_agent_name in self.agents:
                 incoming_communcation_messages = {}
 
-                if (
-                    not observation[target_agent_name]
-                    or target_agent_name != agent_name
-                ):  # Must estimate where the agent is via communication
+                if not observation[
+                    target_agent_name
+                ]:  # Must estimate where the agent is via communication
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
