@@ -49,7 +49,9 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
 
 def create_beliefs_with_obs(agent_name, agent_instance, observations, all_agents):
     """
-    Updating the agent's current beliefs using observation information
+    Create a new beliefs dict with the agent's observations filled in as the
+    groundtruth. If the agent has no observations of another agent,
+    the belief of that agent is set to None.
     """
     beliefs = {}
 
@@ -102,14 +104,15 @@ def step(agent_name, agent_instance, observations, infos, env, config):
         env.agents,
         env.action_space(agent_name),
     )
-    strip_extreme_values_and_update_beliefs(
-        config.D,
-        infos["incoming_messages"],
-        agent_instance.beliefs,
-        new_beliefs,
-        agent_name,
-        env.agents,
-    )
+    if "incoming_messages" in infos:
+        strip_extreme_values_and_update_beliefs(
+            config.D,
+            infos["incoming_messages"],
+            agent_instance.beliefs,
+            new_beliefs,
+            agent_name,
+            env.agents,
+        )
 
 
 def main():
