@@ -1,17 +1,18 @@
 # TODO: Make an enum
 # Default: 0 - stay, 1 - up, 2 - down, 3 - left, 4 - right
 
-from utils.noise import GaussianNoise 
+from utils.noise import GaussianNoise
+
 
 class Config:
-    """ 
+    """
     We allow our environment to be customizable based on the user's requirements.
     The a brief description of all parameters is given below
 
     dim: Dimension of the environment
     size: The size of each dimension of the environment
     iterations: Max number of iterations allowed
-    
+
     agent_grid_width: Width of the final agent formation, note the goal is to have a rectangular formation
     agent_grid_height: Height of the final agent formation, note the goal is to have a rectangular formation
     num_good_agents: Number of truthful agents
@@ -23,15 +24,16 @@ class Config:
 
     possible_moves: The valid actions for each agent
     """
+
     # Initialization parameters
-    dim : int = 2
-    size : int = 20
-    iterations : int = 100
+    dim: int = 2
+    size: int = 20
+    iterations: int = 100
 
     # Agent related parameterss
-    agent_grid_width : int = 4
-    agent_grid_height : int = 2
-    num_good_agents : int = 6
+    agent_grid_width: int = 4
+    agent_grid_height: int = 2
+    num_good_agents: int = 6
     num_adversarial_agents: int = 2
 
     # Graph update parameters
@@ -40,9 +42,26 @@ class Config:
     full_communication: bool = True
     noise = GaussianNoise()
 
-    # Agent update parameters 
+    # Agent update parameters
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
-    possible_moves : {int : int} = {0 : (0, 0), 1 : (0, 1), 2 : (0, -1), 3 : (-1, 0), 4 : (1, 0)}
-    empty_cell : int = -1
-    global_reward_weight : int = 0.5
-    local_reward_weight : int = 0.5
+    possible_moves: {int: int} = {
+        0: (0, 0),
+        1: (0, 1),
+        2: (0, -1),
+        3: (-1, 0),
+        4: (1, 0),
+    }
+    empty_cell: int = -1
+    global_reward_weight: int = 0.5
+    local_reward_weight: int = 0.5
+
+    def __init__(self):
+        pass
+
+
+# Baseline specific configuration parameters
+class BaselineConfig(Config):
+    D: int = 1
+
+    def __init__(self):
+        super().__init__()
