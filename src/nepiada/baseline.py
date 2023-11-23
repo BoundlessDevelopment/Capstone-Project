@@ -84,18 +84,16 @@ def strip_extreme_values_and_update_beliefs(
     for current_agent in all_agents:
         if current_agent == agent_name or new_beliefs[current_agent] is not None:
             continue
+        if incoming_messages[current_agent] is None:
+            # No incoming messages about this agent, keep previous state
+            new_beliefs[current_agent] = curr_beliefs[current_agent]
+            continue
 
         in_messages = []
 
         # Get incoming messages that contain this agent's position
-        for _, comm_messages in incoming_messages.items():
-            if comm_messages[current_agent] is not None:
-                in_messages.append(comm_messages[current_agent])
-
-        # No communications about this agent, retain previous belief
-        if len(in_messages) == 0:
-            new_beliefs[current_agent] = curr_beliefs[current_agent]
-            continue
+        for _, comm_message in incoming_messages[current_agent].items():
+                in_messages.append(comm_message)
 
         # Strip the extreme values
 
