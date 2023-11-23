@@ -90,7 +90,6 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            # Temporary to print grid for debug purposes until we have a better way to render.
             self.world.graph.render_graph(type='obs')
             return
 

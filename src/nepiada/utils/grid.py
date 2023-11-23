@@ -66,8 +66,6 @@ class Grid():
         # Update the grid
         self.state[x_coord][y_coord] = self.config.empty_cell
 
-        # commenting this out for now until we have a better way to render
-        # self.state[new_x_coord][new_y_coord] = agent.uid if agent.type == AgentType.TRUTHFUL else -agent.uid
         self.state[new_x_coord][new_y_coord] = agent.uid
 
         # Update the agent position
