@@ -137,7 +137,7 @@ class nepiada(ParallelEnv):
     def get_all_messages(self):
         """
         The 2xNxNxN message structure returned below are the coordinates that each drone receives from a drone about another drone
-        observations[i][j][k] is the location that drone i is told by drone k where drone k is
+        observations[i][j][k] is the location that drone i is told by drone k where drone j is
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
