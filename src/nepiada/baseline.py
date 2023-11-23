@@ -14,7 +14,6 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
     It is calculated using a similar function to the cost function in
     Diane and Prof. Pavel's Paper, however modified to the discrete space.
     """
-    total_cost = 0
     arrangement_cost = 0
     target_neighbor_cost = 0
 
@@ -116,6 +115,18 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_name,
             env.agents,
         )
+
+    # Calculate the cost for every possible action
+    action_costs = {}
+    for action in env.action_space(agent_name):
+        # Calculate the cost for the action
+        new_beliefs[agent_name] = (agent_instance.p_pos[0] + config.possible_moves[action][0], agent_instance.p_pos[1] + config.possible_moves[action][1])
+        action_costs[action] = calculate_cost(
+            agent_name, agent_instance.target_neighbour, new_beliefs, config.size
+        )
+    
+    # Choose the action with the lowest cost
+    return min(action_costs, key=action_costs.get)
 
 
 def main():
