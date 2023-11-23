@@ -32,3 +32,5 @@ while env.agents:
     observations, rewards, terminations, truncations, info = env.step(actions)
 
 env.close()
+import pygame
+pygame.quit()
