@@ -43,4 +43,19 @@ class Agent(Entity):  # properties of agent entities
         # unique agent id as int
         self.uid = next(Agent.agent_id)
 
+        # Initialize beliefs as an empty dictionary.
+        # This will be populated with the positions that the agent believes itself and other agents to be in.
+        self.beliefs = {}
+
+        # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
+        self.target_neighbour = {}
+
         print("Agent with uid " + str(self.uid) + " has been initialized")
+
+    def set_target_neighbour(self, neighbour_name, distance):
+        # The distance is a list of [ relative_x_pos, relative_y_pos ]
+        assert len(distance) == 2
+        assert distance[0] < Config.size and distance[0] > -(Config.size)
+        assert distance[1] < Config.size and distance[1] > -(Config.size)
+
+        self.target_neighbour[neighbour_name] = distance

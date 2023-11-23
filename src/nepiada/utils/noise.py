@@ -70,8 +70,20 @@ class UniformNoise(AdversarialNoiseStrategy):
     In a uniform distribution all values are equally likely. 
     """
     def add_noise(self, data):
-        data_dim = data.shape
-        return data + np.random.uniform(low=0, high=1, size=data_dim) ## TODO: Get the low and high values from config
+        if isinstance(data, dict):
+            noisy_data = {}
+            for key, value in data.items():
+                if isinstance(value, np.ndarray):
+                    data_dim = value.shape
+                    noisy_data[key] = value + np.random.uniform(loc=0, scale=1, size=data_dim)
+                else:
+                    # Handle non-array values or raise an error
+                    noisy_data[key] = value
+            return noisy_data
+        else:
+            # Handle case for non-dictionary data, or raise an error
+            data_dim = data.shape
+            return data + np.random.uniform(loc=0, scale=1, size=data_dim) ## TODO: Get the low and high values from config
 
     def get_name(self):
         return "Uniform noise"
@@ -82,8 +94,21 @@ class GaussianNoise(AdversarialNoiseStrategy):
     A Gaussian distribution is symmetric around the mean. It is also called the bell curve or normal distribution. 
     """
     def add_noise(self, data):
-        data_dim = data.shape
-        return data + np.random.normal(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
+        if isinstance(data, dict):
+            noisy_data = {}
+            for key, value in data.items():
+                if isinstance(value, np.ndarray):
+                    data_dim = value.shape
+                    noisy_data[key] = value + np.random.normal(loc=0, scale=1, size=data_dim)
+                else:
+                    # Handle non-array values or raise an error
+                    noisy_data[key] = value
+            return noisy_data
+        else:
+            # Handle case for non-dictionary data, or raise an error
+            data_dim = data.shape
+            return data + np.random.normal(loc=0, scale=1, size=data_dim)
+
 
     def get_name(self):
         return "Gaussian noise"
@@ -94,8 +119,20 @@ class LaplacianNoise(AdversarialNoiseStrategy):
     A Laplacian distribution is symmetric around the mean, however it is more concentrated near the mean than a gaussian distribution.
     """
     def add_noise(self, data):
-        data_dim = data.shape
-        return data + np.random.laplace(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
+        if isinstance(data, dict):
+            noisy_data = {}
+            for key, value in data.items():
+                if isinstance(value, np.ndarray):
+                    data_dim = value.shape
+                    noisy_data[key] = value + np.random.laplace(loc=0, scale=1, size=data_dim)
+                else:
+                    # Handle non-array values or raise an error
+                    noisy_data[key] = value
+            return noisy_data
+        else:
+            # Handle case for non-dictionary data, or raise an error
+            data_dim = data.shape
+            return data + np.random.laplace(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
 
     def get_name(self):
         return "Laplacian noise"
