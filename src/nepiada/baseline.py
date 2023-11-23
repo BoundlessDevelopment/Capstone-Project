@@ -21,7 +21,9 @@ def create_beliefs_with_obs(agent_name, agent_instance, observations, all_agents
     return beliefs
 
 
-def strip_extreme_values_and_update_beliefs(D_value, incoming_messages, curr_beliefs, new_beliefs, agent_name, all_agents):
+def strip_extreme_values_and_update_beliefs(
+    D_value, incoming_messages, curr_beliefs, new_beliefs, agent_name, all_agents
+):
     """
     This function strips the extreme values from the incoming messages according
     to the D value. It strips the D greater values compared to it's current beliefs,
@@ -35,19 +37,18 @@ def strip_extreme_values_and_update_beliefs(D_value, incoming_messages, curr_bel
             continue
 
         in_messages = []
-    
+
         # Get incoming messages that contain this agent's position
         for _, comm_messages in incoming_messages.items():
             if comm_messages[current_agent] is not None:
                 in_messages.append(comm_messages[current_agent])
-        
+
         # No communications about this agent, retain previous belief
         if len(in_messages) == 0:
             new_beliefs[current_agent] = curr_beliefs[current_agent]
             continue
 
         # Strip the extreme values
-        
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
@@ -58,8 +59,14 @@ def step(agent_name, agent_instance, observations, infos, env, config):
         env.agents,
         env.action_space(agent_name),
     )
-    strip_extreme_values_and_update_beliefs(config.D, infos["incoming_messages"], agent_instance.beliefs, new_beliefs, agent_name, env.agents)
-
+    strip_extreme_values_and_update_beliefs(
+        config.D,
+        infos["incoming_messages"],
+        agent_instance.beliefs,
+        new_beliefs,
+        agent_name,
+        env.agents,
+    )
 
 
 def main():
