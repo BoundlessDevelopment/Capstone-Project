@@ -98,12 +98,12 @@ class nepiada(ParallelEnv):
 
             # This is a debugging code
             # TODO: Remove later
-            for agent_name, agent in self.world.agents.items():
-                print(agent_name, " has target neighbours: ")
-                for neighbour, distance in agent.target_neighbour.items():
-                    print(neighbour, distance)
+            # for agent_name, agent in self.world.agents.items():
+            #     print(agent_name, " has target neighbours: ")
+            #     for neighbour, distance in agent.target_neighbour.items():
+            #         print(neighbour, distance)
 
-                print("----------------------")
+            #     print("----------------------")
 
             return
 
@@ -339,7 +339,7 @@ class nepiada(ParallelEnv):
 
                 deviation_from_arrangement += np.sqrt((neighbour_x - agent_x - ideal_x)**2 + (neighbour_y - agent_y - ideal_y)**2)
 
-            # Compute the agent's net reward
-            rewards[agent_name] = (Config.global_reward_weight * global_arrangement_reward) + (Config.local_reward_weight * deviation_from_arrangement)
+            # Compute the agent's net reward, note the negative sign
+            rewards[agent_name] = -((Config.global_reward_weight * global_arrangement_reward) + (Config.local_reward_weight * deviation_from_arrangement))
         
         return rewards
