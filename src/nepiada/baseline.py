@@ -92,7 +92,7 @@ def strip_extreme_values_and_update_beliefs(
 
         # Get incoming messages that contain this agent's position
         for _, comm_message in incoming_messages[current_agent].items():
-                in_messages.append(comm_message)
+            in_messages.append(comm_message)
 
         # Strip the extreme values
 
@@ -120,11 +120,14 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     action_costs = {}
     for action in env.action_space(agent_name):
         # Calculate the cost for the action
-        new_beliefs[agent_name] = (agent_instance.p_pos[0] + config.possible_moves[action][0], agent_instance.p_pos[1] + config.possible_moves[action][1])
+        new_beliefs[agent_name] = (
+            agent_instance.p_pos[0] + config.possible_moves[action][0],
+            agent_instance.p_pos[1] + config.possible_moves[action][1],
+        )
         action_costs[action] = calculate_cost(
             agent_name, agent_instance.target_neighbour, new_beliefs, config.size
         )
-    
+
     # Choose the action with the lowest cost
     return min(action_costs, key=action_costs.get)
 
@@ -144,10 +147,6 @@ def main():
             )
             actions[agent] = agent_action
 
-        # Note that the observations here are the true position of the agents in the environment
-        # They can be accessed by observations[agent_name] = [x_coord, y_coord]
-        # The communication and observation graph are stored within info
-        # They can be accessed by info[agent_name] = {"obs": [], "comm": []}
         observations, rewards, terminations, truncations, info = env.step(actions)
 
     env.close()
