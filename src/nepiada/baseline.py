@@ -96,6 +96,34 @@ def strip_extreme_values_and_update_beliefs(
             in_messages.append(comm_message)
 
         # Strip the extreme values
+        x_pos_deviation = []
+        y_pos_deviation = []
+        for message in in_messages:
+            x_pos_deviation.append(message[0] - curr_beliefs[current_agent][0])
+            y_pos_deviation.append(message[1] - curr_beliefs[current_agent][1])
+
+        if len(x_pos_deviation) <= D_value * 2 or len(y_pos_deviation) <= D_value * 2:
+            # Not enough messages to strip
+            new_beliefs[current_agent] = curr_beliefs[current_agent]
+            continue
+
+        # Sort the deviations
+        x_pos_deviation.sort()
+        y_pos_deviation.sort()
+
+        # Remove D lowest and D highest values
+        x_pos_deviation = x_pos_deviation[D_value:-D_value]
+        y_pos_deviation = y_pos_deviation[D_value:-D_value]
+
+        # Average the remaining values
+        x_pos_delta = sum(x_pos_deviation) / len(x_pos_deviation)
+        y_pos_delta = sum(y_pos_deviation) / len(y_pos_deviation)
+
+        # Update the beliefs
+        new_beliefs[current_agent] = (
+            curr_beliefs[current_agent][0] + x_pos_delta,
+            curr_beliefs[current_agent][1] + y_pos_delta,
+        )
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
