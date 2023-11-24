@@ -1,6 +1,7 @@
 # Local imports
 import numpy as np
 import env.nepiada as nepiada
+from nepiada.utils import agent
 from utils.config import BaselineConfig
 import pygame
 
@@ -129,7 +130,14 @@ def step(agent_name, agent_instance, observations, infos, env, config):
         )
 
     # Choose the action with the lowest cost
-    return min(action_costs, key=action_costs.get)
+    min_action = min(action_costs, key=action_costs.get)
+    new_beliefs[agent_name] = (
+        agent_instance.p_pos[0] + config.possible_moves[min_action][0],
+        agent_instance.p_pos[1] + config.possible_moves[min_action][1],
+    )
+    agent_instance.beliefs = new_beliefs
+
+    return min_action
 
 
 def main():
