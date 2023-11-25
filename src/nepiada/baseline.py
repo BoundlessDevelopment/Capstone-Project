@@ -176,12 +176,12 @@ def main():
 
     while env.agents:
         actions = {}
-        for agent in env.agents:
-            curr_agent = infos[agent]["agent_instance"]
+        for c_agent in env.agents:
+            curr_agent = infos[c_agent]["agent_instance"]
             agent_action = step(
-                agent, curr_agent, observations[agent], infos[agent], env, env_config
+                c_agent, curr_agent, observations[c_agent], infos[c_agent], env, env_config
             )
-            actions[agent] = agent_action
+            actions[c_agent] = agent_action
 
         observations, rewards, terminations, truncations, info = env.step(actions)
 
