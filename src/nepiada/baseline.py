@@ -1,7 +1,6 @@
 # Local imports
 import numpy as np
 import env.nepiada as nepiada
-from nepiada.utils import agent
 from utils.config import BaselineConfig
 import pygame
 
