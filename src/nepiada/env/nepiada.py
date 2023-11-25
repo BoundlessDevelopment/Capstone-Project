@@ -170,7 +170,7 @@ class nepiada(ParallelEnv):
                 ] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
-        return incoming_agent_messages
+        return incoming_all_messages
 
     def initialize_beliefs(self):
         """
