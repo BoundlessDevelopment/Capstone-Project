@@ -183,7 +183,7 @@ def main():
             )
             actions[c_agent] = agent_action
 
-        observations, rewards, terminations, truncations, info = env.step(actions)
+        observations, rewards, terminations, truncations, infos = env.step(actions)
 
     env.close()
     pygame.quit()
