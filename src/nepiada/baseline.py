@@ -130,8 +130,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     new_beliefs = create_beliefs_with_obs(
         agent_name,
         observations,
-        env.agents,
-        env.action_space(agent_name),
+        env.agents
     )
     # If there are incoming messages, process them and update beliefs
     if "incoming_messages" in infos:
