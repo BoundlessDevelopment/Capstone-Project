@@ -92,9 +92,17 @@ def strip_extreme_values_and_update_beliefs(
 
         # Get incoming messages that contain this agent's position
         for _, comm_message in incoming_messages[current_agent].items():
-            in_messages.append(comm_message)
+            if comm_message is not None:
+                in_messages.append(comm_message)
 
         # Strip the extreme values
+        if curr_beliefs[current_agent] is None:
+            # Average all the incoming messages for the case where we don't have an estimate for the current agent
+            x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
+            y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
+            new_beliefs[current_agent] = (x_pos_mean, y_pos_mean)
+            continue
+    
         x_pos_deviation = []
         y_pos_deviation = []
         for message in in_messages:
