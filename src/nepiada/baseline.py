@@ -83,7 +83,7 @@ def strip_extreme_values_and_update_beliefs(
     for current_agent in all_agents:
         if current_agent == agent_name or new_beliefs[current_agent] is not None:
             continue
-        if incoming_messages[current_agent] is None:
+        if current_agent not in incoming_messages or incoming_messages[current_agent] is None:
             # No incoming messages about this agent, keep previous state
             new_beliefs[current_agent] = curr_beliefs[current_agent]
             continue
@@ -145,7 +145,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
 
     # Calculate the cost for every possible action
     action_costs = {}
-    for action in env.action_space(agent_name):
+    for action in range(env.action_space(agent_name).n):
         # Calculate the cost for the action
         new_beliefs[agent_name] = (
             agent_instance.p_pos[0] + config.possible_moves[action][0],

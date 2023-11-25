@@ -278,6 +278,7 @@ class nepiada(ParallelEnv):
             self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
                 agent_name
             ]
+            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
         if self.render_mode == "human":
             self.render()
