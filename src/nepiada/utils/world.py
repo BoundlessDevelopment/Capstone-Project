@@ -136,6 +136,13 @@ class World:
 
     def get_agent(self, agent_name):
         return self.agents[agent_name]
+    
+    def get_target_distance(self,p_pos): 
+        try: 
+            return ((self.target_x - p_pos[0]) ** 2 + (self.target_y - p_pos[1]) ** 2) ** 0.5 
+        except: 
+            breakpoint()
+    
 
     # return all entities in the world
     @property
