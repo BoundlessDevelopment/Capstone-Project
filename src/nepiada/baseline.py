@@ -20,16 +20,17 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
     target_x = grid_size / 2
     target_y = grid_size / 2
 
+    length = len(beliefs)
     # Calculate the global arrangement cost
     for curr_agent_name, agent_belief in beliefs.items():
         if agent_belief is None:
-            # What do we do here?
-            continue
-        arrangement_cost += np.sqrt(
-            (agent_belief[0] - target_x) ** 2 + (agent_belief[1] - target_y) ** 2
-        )
+            length -= 1
+        else:
+            arrangement_cost += np.sqrt(
+                (agent_belief[0] - target_x) ** 2 + (agent_belief[1] - target_y) ** 2
+            )
 
-    arrangement_cost /= len(beliefs)
+    arrangement_cost /= length
 
     # Calculate the target neighbour cost
     for curr_agent_name, target_relative_position in target_neighbours.items():
