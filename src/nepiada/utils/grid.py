@@ -20,10 +20,9 @@ class Grid():
         self.uid_to_type = {}
 
     def save_agent_types(self,agents): 
-        for agent_name, agent in agents.items(): 
+        for _, agent in agents.items(): 
             self.uid_to_type[agent.uid] = agent.type 
 
-            print(agent.uid)
 
     def get_cell_size(self,width): 
      return width // self.dim
