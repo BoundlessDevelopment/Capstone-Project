@@ -11,7 +11,6 @@ from utils.config import Config
 from utils.world import World
 from utils.agent import AgentType
 import pygame
-import copy
 
 
 def parallel_env(config: Config):
@@ -335,7 +334,6 @@ class nepiada(ParallelEnv):
 
         # Add each agents reward based on their target neighbours
         for agent_name in self.agents:
-            deviation_from_neighbours = 0
             agent = self.world.agents[agent_name]
             agent_x = agent.p_pos[0]
             agent_y = agent.p_pos[1]
