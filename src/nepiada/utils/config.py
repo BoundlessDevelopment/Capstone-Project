@@ -65,3 +65,11 @@ class BaselineConfig(Config):
 
     def __init__(self):
         super().__init__()
+
+# Baseline specific configuration parameters
+class EpsilonBaselineConfig(Config):
+    D: int = 1
+    epsilon: int = 0.2
+
+    def __init__(self):
+        super().__init__()
