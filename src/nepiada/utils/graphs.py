@@ -98,6 +98,17 @@ class Graph:
                 self.screen, color, agent_pixel_pos, self.cell_size // radius
             )
 
+    def _draw_target(self, radius=4):
+        # Convert grid positions to pixel positions for drawing
+        target_pos = (
+            (self.dim / 2) * self.cell_size + self.cell_size // 2,
+            (self.dim / 2) * self.cell_size + self.cell_size // 2,
+        )
+        color = BLACK
+        pygame.draw.circle(
+            self.screen, color, target_pos, self.cell_size // radius
+        )
+
     # Function to draw the grid
     def _draw_grid(self):
         self.screen.fill(WHITE)
@@ -112,6 +123,7 @@ class Graph:
             return
         self._draw_grid()
         self._draw_agents(radius=2)
+        self._draw_target(radius=4)
 
         # Draw the agents and the observations
         observations = self.obs if type == "obs" else self.comm
