@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from IPython.display import display, clear_output
 from .agent import AgentType
+from collections import defaultdict 
 
 class Grid():
     def __init__(self, config):
@@ -12,7 +13,11 @@ class Grid():
         _, self.state_ax = plt.subplots(figsize=(5, 5))
         plt.ion()
 
-        self.state = np.full((self.dim, self.dim), config.empty_cell, dtype=int)
+        #self.state = np.full((self.dim, self.dim), config.empty_cell, dtype=int)
+        self.state = defaultdict(lambda : defaultdict(set))
+        self.reset_grid()
+
+
         self.uid_to_type = {}
 
     def save_agent_types(self,agents): 
@@ -31,10 +36,12 @@ class Grid():
             y_coord = agent.p_pos[1]
             # commenting this out for now until we have a better way to render
             # self.state[x_coord][y_coord] = agent.uid if agent.type == AgentType.TRUTHFUL else -agent.uid
-            self.state[x_coord][y_coord] = agent.uid
+            self.state[x_coord][y_coord].add(agent.uid) 
 
     def reset_grid(self):
-        self.state = np.full((self.dim, self.dim), self.config.empty_cell, dtype=int)
+        for x in range(self.dim): 
+            for y in range(self.dim): 
+                self.state[x][y].add(self.config.empty_cell)
     
     def move_drone(self, agent, action):
         """
@@ -59,14 +66,11 @@ class Grid():
         if new_x_coord < 0 or new_x_coord >= self.dim or new_y_coord < 0 or new_y_coord >= self.dim:
             return -1
 
-        # Check if the new position is occupied
-        if self.state[new_x_coord][new_y_coord] != self.config.empty_cell:
-            return -2
-
         # Update the grid
-        self.state[x_coord][y_coord] = self.config.empty_cell
+        self.state[x_coord][y_coord].remove(agent.uid)
+        self.state[x_coord][y_coord].add(self.config.empty_cell)
 
-        self.state[new_x_coord][new_y_coord] = agent.uid
+        self.state[new_x_coord][new_y_coord].add(agent.uid) 
 
         # Update the agent position
         agent.p_pos = (new_x_coord, new_y_coord)
