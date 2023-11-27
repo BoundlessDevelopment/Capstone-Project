@@ -142,6 +142,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
         env.agents
     )
     # If there are incoming messages, process them and update beliefs
+    # Incoming messages should never be None after the first step
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,

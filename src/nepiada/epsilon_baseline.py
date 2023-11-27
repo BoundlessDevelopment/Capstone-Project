@@ -142,6 +142,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
         env.agents
     )
     # If there are incoming messages, process them and update beliefs
+    # Incoming messages should never be None after the first step
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,
@@ -167,7 +168,6 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     # Choose the action with the lowest cost
     min_action = -1
     if (random.random() < config.epsilon):
-        print("Random action taken!")
         min_action = random.randint(0, 4)
     else:
         min_action = min(action_costs, key=action_costs.get)
