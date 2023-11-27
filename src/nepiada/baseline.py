@@ -5,7 +5,7 @@ from utils.config import BaselineConfig
 import pygame
 
 
-def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
+def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
     """
     This function calculates the cost value given the agent's beliefs.
     Before calling this method, the agent's belief of itself should be updated
@@ -50,7 +50,7 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size):
         )
 
     # Return cost, should this be weighted?
-    return arrangement_cost + target_neighbor_cost
+    return (config.global_reward_weight * arrangement_cost) + (config.local_reward_weight * target_neighbor_cost)
 
 
 def create_beliefs_with_obs(agent_name, observations, all_agents):
@@ -161,11 +161,12 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_instance.p_pos[1] + config.possible_moves[action][1],
         )
         action_costs[action] = calculate_cost(
-            agent_name, agent_instance.target_neighbour, new_beliefs, config.size
+            agent_name, agent_instance.target_neighbour, new_beliefs, config.size, config
         )
 
     # Choose the action with the lowest cost
     min_action = min(action_costs, key=action_costs.get)
+
     new_beliefs[agent_name] = (
         agent_instance.p_pos[0] + config.possible_moves[min_action][0],
         agent_instance.p_pos[1] + config.possible_moves[min_action][1],

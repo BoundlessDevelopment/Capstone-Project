@@ -28,13 +28,13 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 20
-    iterations: int = 100
+    iterations: int = 50
 
     # Agent related parameterss
-    agent_grid_width: int = 4
+    agent_grid_width: int = 2
     agent_grid_height: int = 2
-    num_good_agents: int = 6
-    num_adversarial_agents: int = 2
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 1
 
     # Graph update parameters
     dynamic_obs: bool = True
@@ -52,8 +52,8 @@ class Config:
         4: (1, 0),
     }
     empty_cell: int = -1
-    global_reward_weight: int = 0.5
-    local_reward_weight: int = 0.5
+    global_reward_weight: int = 1
+    local_reward_weight: int = 1
 
     def __init__(self):
         pass
