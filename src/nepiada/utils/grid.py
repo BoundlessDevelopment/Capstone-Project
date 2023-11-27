@@ -13,7 +13,6 @@ class Grid():
         _, self.state_ax = plt.subplots(figsize=(5, 5))
         plt.ion()
 
-        #self.state = np.full((self.dim, self.dim), config.empty_cell, dtype=int)
         self.state = defaultdict(lambda : defaultdict(set))
         self.reset_grid()
 
@@ -30,12 +29,9 @@ class Grid():
      return width // self.dim
 
     def update_grid(self, agents):
-        #TODO (Arash): Should be replaced with a better rendering utility, example PyGame
         for _, agent in agents.items():
             x_coord = agent.p_pos[0]
             y_coord = agent.p_pos[1]
-            # commenting this out for now until we have a better way to render
-            # self.state[x_coord][y_coord] = agent.uid if agent.type == AgentType.TRUTHFUL else -agent.uid
             self.state[x_coord][y_coord].add(agent.uid) 
 
     def reset_grid(self):

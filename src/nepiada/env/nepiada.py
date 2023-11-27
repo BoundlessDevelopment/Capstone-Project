@@ -302,7 +302,6 @@ class nepiada(ParallelEnv):
                 # Drone collided with boundary
                 pass
 
-        # Check collided drones in reverse to see if moving them is possible in this step
         if collided_drones: 
             assert False, 'We should be allowing for multiple drones to occupy the same position'
 
