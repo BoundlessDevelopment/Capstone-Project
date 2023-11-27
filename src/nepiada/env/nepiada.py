@@ -302,14 +302,9 @@ class nepiada(ParallelEnv):
                 # Drone collided with boundary
                 pass
 
-        # Check collided drones in reverse to see if moving them is possible in this step
-        for agent_name in reversed(collided_drones):
-            agent = self.world.agents[agent_name]
-            action = actions[agent_name]
-            status = self.world.grid.move_drone(agent, action)
-            if status == -2:
-                # Drone collided with another drone
-                pass
+        if collided_drones: 
+            assert False, 'We should be allowing for multiple drones to occupy the same position'
+
 
     def get_rewards(self):
         """
