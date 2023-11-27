@@ -9,8 +9,10 @@ from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
 
 from utils.config import Config
 from utils.world import World
-import pygame 
+from utils.agent import AgentType
+import pygame
 import copy
+
 
 def parallel_env(config: Config):
     """
@@ -20,6 +22,7 @@ def parallel_env(config: Config):
     """
     internal_render_mode = "human"
     env = raw_env(render_mode=internal_render_mode, config=config)
+    env = parallel_to_aec(env)
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
     # Provides a wide vareity of helpful user errors
@@ -34,7 +37,6 @@ def raw_env(render_mode=None, config: Config = Config()):
     function to convert from a ParallelEnv to an AEC env
     """
     env = nepiada(render_mode=render_mode, config=config)
-    env = parallel_to_aec(env)
     return env
 
 
@@ -92,7 +94,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            self.world.graph.render_graph(type='obs')
+            self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -123,38 +125,52 @@ class nepiada(ParallelEnv):
             for observed_agent_name in self.agents:
                 observed_agent = self.world.get_agent(observed_agent_name)
                 if observed_agent_name in self.world.graph.obs[agent_name]:
-                    observation[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
+                    observation[observed_agent_name] = (
+                        observed_agent.p_pos[0],
+                        observed_agent.p_pos[1],
+                    )
                 else:
-                    observation[observed_agent_name] = None # Cannot be observed
+                    observation[observed_agent_name] = None  # Cannot be observed
             observations[agent_name] = observation
         return observations
-    
+
     def get_all_messages(self):
         """
         The 2xNxNxN message structure returned below are the coordinates that each drone receives from a drone about another drone
-        observations[i][j][k] is the location that drone i is told by drone k where drone k is
+        observations[i][j][k] is the location that drone i is told by drone k where drone j is
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
             observation = self.observations[agent_name]
 
             incoming_agent_messages = {}
 
             for target_agent_name in self.agents:
-
                 incoming_communcation_messages = {}
 
-                if not observation[target_agent_name]: # Must estimate where the agent is via communication
-                    for helpful_agent in self.world.graph.comm[agent_name]:  
-                        helpful_beliefs = self.config.noise.add_noise(self.world.get_agent(helpful_agent).beliefs)
+                if not observation[
+                    target_agent_name
+                ]:  # Must estimate where the agent is via communication
+                    for helpful_agent in self.world.graph.comm[agent_name]:
+                        curr_agent = self.world.get_agent(helpful_agent)
+                        if curr_agent.type == AgentType.ADVERSARIAL:
+                            helpful_beliefs = self.config.noise.add_noise(
+                                curr_agent.beliefs
+                            )
+                        else:
+                            helpful_beliefs = curr_agent.beliefs
                         if helpful_beliefs[target_agent_name]:
-                            incoming_communcation_messages[helpful_agent] = (helpful_beliefs[target_agent_name][0], helpful_beliefs[target_agent_name][1])
-                
-                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
+                            incoming_communcation_messages[helpful_agent] = (
+                                helpful_beliefs[target_agent_name][0],
+                                helpful_beliefs[target_agent_name][1],
+                            )
+
+                incoming_agent_messages[
+                    target_agent_name
+                ] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
-        return incoming_agent_messages
+        return incoming_all_messages
 
     def initialize_beliefs(self):
         """
@@ -163,7 +179,11 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             beliefs = self.world.get_agent(agent_name).beliefs
             for target_agent_name in self.agents:
-                    beliefs[target_agent_name] = None
+                beliefs[target_agent_name] = None
+
+    def initialize_infos_with_agents(self):
+        for agent_name in self.agents:
+            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
     def reset(self, seed=None, options=None):
         """
@@ -193,6 +213,9 @@ class nepiada(ParallelEnv):
         # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent: {} for agent in self.agents}
 
+        # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
+        self.initialize_infos_with_agents()
+
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
         self.observations = self.get_observations()
 
@@ -220,7 +243,6 @@ class nepiada(ParallelEnv):
             Is a dictionary with agent_names as the key. Each value in turn is a dict
             of the form {"comm": [], "beliefs": [], "incoming_all_messages": []}
             To access a agent's communcation graph: infos[agent_name]["comm"]
-            To access a agent's beliefs dictionary: infos[agent_name]["beliefs"]
             To access a agent's incoming_all_messages dictionary: infos[agent_name]["incoming_all_messages"]
 
         """
@@ -236,7 +258,7 @@ class nepiada(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
         self.num_moves += 1
-        env_truncation = self.num_moves >= Config.iterations
+        env_truncation = self.num_moves >= self.config.iterations
         truncations = {agent: env_truncation for agent in self.agents}
 
         # Update the observation and communication graphs at each iteration
@@ -245,16 +267,18 @@ class nepiada(ParallelEnv):
         self.world.update_graphs()
 
         self.observations = self.get_observations()
-            
+
         # Second pass communicated beliefs
         incoming_all_messages = self.get_all_messages()
-                        
+
         # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent_name: {} for agent_name in self.agents}
         for agent_name in self.agents:
             self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
-            self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
-            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[agent_name]
+            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
+                agent_name
+            ]
+            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
         if self.render_mode == "human":
             self.render()
@@ -289,25 +313,27 @@ class nepiada(ParallelEnv):
 
     def get_rewards(self):
         """
-            This function assigns reward to all agents based on the following two criterias:
+        This function assigns reward to all agents based on the following two criterias:
 
-            - global_arrangement_reward : The average distance of all agents from the target
-            - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
+        - global_arrangement_reward : The average distance of all agents from the target
+        - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
 
-            Refer to D. Gadjov and Pavel's paper for more details about it.
+        Refer to D. Gadjov and Pavel's paper for more details about it.
 
-            Returns: A dictionary with agent_name as key and reward as a value
+        Returns: A dictionary with agent_name as key and reward as a value
         """
         rewards = {}
 
         # Get the average distance of the agents from target
-        target_x = Config.size / 2
-        target_y = Config.size / 2
+        target_x = self.config.size / 2
+        target_y = self.config.size / 2
         global_arrangement_reward = 0
 
         for agent_name in self.agents:
             agent = self.world.agents[agent_name]
-            distance = np.sqrt((agent.p_pos[0] - target_x)**2 + (agent.p_pos[1] - target_y)**2)
+            distance = np.sqrt(
+                (agent.p_pos[0] - target_x) ** 2 + (agent.p_pos[1] - target_y) ** 2
+            )
             global_arrangement_reward += distance
 
         global_arrangement_reward = global_arrangement_reward / len(self.agents)
@@ -326,9 +352,15 @@ class nepiada(ParallelEnv):
                 ideal_x = ideal_distance[0]
                 ideal_y = ideal_distance[1]
 
-                deviation_from_arrangement += np.sqrt((neighbour_x - agent_x - ideal_x)**2 + (neighbour_y - agent_y - ideal_y)**2)
+                deviation_from_arrangement += np.sqrt(
+                    (neighbour_x - agent_x - ideal_x) ** 2
+                    + (neighbour_y - agent_y - ideal_y) ** 2
+                )
 
             # Compute the agent's net reward, note the negative sign
-            rewards[agent_name] = -((Config.global_reward_weight * global_arrangement_reward) + (Config.local_reward_weight * deviation_from_arrangement))
-        
+            rewards[agent_name] = -(
+                (self.config.global_reward_weight * global_arrangement_reward)
+                + (self.config.local_reward_weight * deviation_from_arrangement)
+            )
+
         return rewards

@@ -4,30 +4,35 @@ from utils.graphs import Graph
 from utils.agent import Agent, AgentType
 import pygame
 import numpy as np
-from .anim_consts import * 
+from .anim_consts import *
+
 
 class World:
     def __init__(self, config):
         # Check if the number of agents match the agents target size
-        assert config.num_good_agents + config.num_adversarial_agents == config.agent_grid_width * config.agent_grid_height
+        assert (
+            config.num_good_agents + config.num_adversarial_agents
+            == config.agent_grid_width * config.agent_grid_height
+        )
 
         # Initialize the agents
         self.num_agents = config.num_good_agents + config.num_adversarial_agents
-        self.agents, self.agent_uid_to_name = self.__initialize_agents(self.num_agents, config)
+        self.agents, self.agent_uid_to_name = self.__initialize_agents(
+            self.num_agents, config
+        )
 
         # Set each agent's adjacent target neighbours
         self.__initialize_target_neighbours(self.num_agents, config)
-        
+
         self.screen = self._init_pygame()
         # Initialize the Grid
         self.grid = Grid(config)
         self.grid.save_agent_types(self.agents)
         cell_size = self.grid.get_cell_size(WIDTH)
 
-
         # Initialize the graphs
-        self.graph = Graph(config, self.agents,screen=self.screen, cell_size=cell_size)
-        self.graph.screen = self.screen 
+        self.graph = Graph(config, self.agents, screen=self.screen, cell_size=cell_size)
+        self.graph.screen = self.screen
 
         # Update the grid with agent's position
         self.grid.update_grid(self.agents)
@@ -39,8 +44,7 @@ class World:
         self.target_x = config.size / 2
         self.target_y = config.size / 2
 
-    def _init_pygame(self): 
-
+    def _init_pygame(self):
         # Initialize Pygame
         pygame.init()
 
@@ -48,21 +52,21 @@ class World:
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Agent Observations")
         return screen
-      
-    def __del__(self): 
+
+    def __del__(self):
         pygame.quit()
         print("World has been initialized")
 
     def __initialize_agents(self, num_agents, config):
         """
-            This is a private function
+        This is a private function
 
-            Here we initialize adversarial agents first followed by truthful agents
-            # TODO: They can be randomized by a particular seed
+        Here we initialize adversarial agents first followed by truthful agents
+        # TODO: They can be randomized by a particular seed
 
-            Returns:
-                agents: Dictionary of agent_name to agent object
-                agent_uid_to_name: Dictionary of agent_uid to agent_name
+        Returns:
+            agents: Dictionary of agent_name to agent object
+            agent_uid_to_name: Dictionary of agent_uid to agent_name
         """
         agents = {}
         agent_uid_to_name = {}
@@ -83,12 +87,12 @@ class World:
 
     def __initialize_target_neighbours(self, num_agents, config):
         """
-            This is a private function
+        This is a private function
 
-            The target neighbours for each agent is its left, right, top and bottom agents,
-            if they exist. The agent should try to maintain a unit distance from them.
+        The target neighbours for each agent is its left, right, top and bottom agents,
+        if they exist. The agent should try to maintain a unit distance from them.
 
-            Returns: Nothing
+        Returns: Nothing
         """
         assert len(self.agents) != 0
         assert len(self.agent_uid_to_name) != 0
@@ -101,25 +105,25 @@ class World:
             agent = self.agents[agent_name]
 
             # Check the left
-            if (i % width != 0):
+            if i % width != 0:
                 # Add the target neighbour
                 neighbour_name = self.agent_uid_to_name[i - 1]
                 agent.set_target_neighbour(neighbour_name, [-1, 0])
 
             # Check the right
-            if ((i + 1) % width != 0):
+            if (i + 1) % width != 0:
                 # Add the target neighbour
                 neighbour_name = self.agent_uid_to_name[i + 1]
                 agent.set_target_neighbour(neighbour_name, [1, 0])
 
             # Check the top
-            if (i // width != 0):
+            if i // width != 0:
                 # Add the target neighbour
                 neighbour_name = self.agent_uid_to_name[i - width]
                 agent.set_target_neighbour(neighbour_name, [0, 1])
 
             # Check the bottom
-            if (i // width != height - 1):
+            if i // width != height - 1:
                 # Add the target neighbour
                 neighbour_name = self.agent_uid_to_name[i + width]
                 agent.set_target_neighbour(neighbour_name, [0, -1])
