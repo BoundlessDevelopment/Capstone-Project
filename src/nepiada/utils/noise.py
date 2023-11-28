@@ -70,21 +70,21 @@ class UniformNoise(AdversarialNoiseStrategy):
     In a uniform distribution all values are equally likely. 
     """
     def add_noise(self, data):
-        if isinstance(data, dict):
-            noisy_data = {}
-            for key, value in data.items():
-                if isinstance(value, np.ndarray):
-                    data_dim = value.shape
-                    noisy_data[key] = value + np.random.uniform(loc=0, scale=1, size=data_dim)
-                else:
-                    # Handle non-array values or raise an error
-                    noisy_data[key] = value
-            return noisy_data
-        else:
-            # Handle case for non-dictionary data, or raise an error
-            data_dim = data.shape
-            return data + np.random.uniform(loc=0, scale=1, size=data_dim) ## TODO: Get the low and high values from config
-
+        noisy_data = {}
+        print(data)
+        for key, value in data.items():
+            if value is None:
+                # Skip None values or handle them differently if needed
+                noisy_data[key] = value
+                continue
+            if isinstance(value, tuple):
+                # Add noise to each element in the tuple
+                noisy_data[key] = tuple(val + np.random.uniform(loc=0, scale=1) for val in value if val is not None)
+            else:
+                # Optionally handle other non-tuple values or raise an error
+                raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+        return noisy_data
+    
     def get_name(self):
         return "Uniform noise"
 
@@ -94,21 +94,19 @@ class GaussianNoise(AdversarialNoiseStrategy):
     A Gaussian distribution is symmetric around the mean. It is also called the bell curve or normal distribution. 
     """
     def add_noise(self, data):
-        if isinstance(data, dict):
-            noisy_data = {}
-            for key, value in data.items():
-                if isinstance(value, np.ndarray):
-                    data_dim = value.shape
-                    noisy_data[key] = value + np.random.normal(loc=0, scale=1, size=data_dim)
-                else:
-                    # Handle non-array values or raise an error
-                    noisy_data[key] = value
-            return noisy_data
-        else:
-            # Handle case for non-dictionary data, or raise an error
-            data_dim = data.shape
-            return data + np.random.normal(loc=0, scale=1, size=data_dim)
-
+        noisy_data = {}
+        for key, value in data.items():
+            if value is None:
+                # Skip None values or handle them differently if needed
+                noisy_data[key] = value
+                continue
+            if isinstance(value, tuple):
+                # Add noise to each element in the tuple
+                noisy_data[key] = tuple(val + np.random.normal(loc=0, scale=1) for val in value if val is not None)
+            else:
+                # Optionally handle other non-tuple values or raise an error
+                raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+        return noisy_data
 
     def get_name(self):
         return "Gaussian noise"
@@ -119,20 +117,19 @@ class LaplacianNoise(AdversarialNoiseStrategy):
     A Laplacian distribution is symmetric around the mean, however it is more concentrated near the mean than a gaussian distribution.
     """
     def add_noise(self, data):
-        if isinstance(data, dict):
-            noisy_data = {}
-            for key, value in data.items():
-                if isinstance(value, np.ndarray):
-                    data_dim = value.shape
-                    noisy_data[key] = value + np.random.laplace(loc=0, scale=1, size=data_dim)
-                else:
-                    # Handle non-array values or raise an error
-                    noisy_data[key] = value
-            return noisy_data
-        else:
-            # Handle case for non-dictionary data, or raise an error
-            data_dim = data.shape
-            return data + np.random.laplace(loc=0, scale=1, size=data_dim) ## TODO: Get the loc and scale values from config
+        noisy_data = {}
+        for key, value in data.items():
+            if value is None:
+                # Skip None values or handle them differently if needed
+                noisy_data[key] = value
+                continue
+            if isinstance(value, tuple):
+                # Add noise to each element in the tuple
+                noisy_data[key] = tuple(val + np.random.laplace(loc=0, scale=1) for val in value if val is not None)
+            else:
+                # Optionally handle other non-tuple values or raise an error
+                raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+        return noisy_data
 
     def get_name(self):
         return "Laplacian noise"
