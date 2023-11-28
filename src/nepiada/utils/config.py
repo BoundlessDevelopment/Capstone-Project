@@ -50,6 +50,10 @@ class Config:
         2: (0, -1),
         3: (-1, 0),
         4: (1, 0),
+        5: (1, 1),
+        6: (1, -1),
+        7: (-1, 1),
+        8: (-1, -1),
     }
     empty_cell: int = -1
     global_reward_weight: int = 1
