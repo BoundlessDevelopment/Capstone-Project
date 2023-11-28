@@ -147,9 +147,8 @@ class nepiada(ParallelEnv):
             for target_agent_name in self.agents:
                 incoming_communcation_messages = {}
 
-                if not observation[
-                    target_agent_name
-                ]:  # Must estimate where the agent is via communication
+                if not observation[target_agent_name]:
+                    # Must estimate where the agent is via communication
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
@@ -301,9 +300,10 @@ class nepiada(ParallelEnv):
                 # Drone collided with boundary
                 pass
 
-        if collided_drones: 
-            assert False, 'We should be allowing for multiple drones to occupy the same position'
-
+        if collided_drones:
+            assert (
+                False
+            ), "We should be allowing for multiple drones to occupy the same position"
 
     def get_rewards(self):
         """
