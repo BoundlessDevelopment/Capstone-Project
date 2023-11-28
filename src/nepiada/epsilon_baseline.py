@@ -168,7 +168,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     # Choose the action with the lowest cost
     min_action = -1
     if (random.random() < config.epsilon):
-        min_action = random.randint(0, 4)
+        min_action = random.randint(0, env.action_space(agent_name).n - 1)
     else:
         min_action = min(action_costs, key=action_costs.get)
 
