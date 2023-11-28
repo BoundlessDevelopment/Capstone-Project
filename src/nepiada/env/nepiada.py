@@ -80,7 +80,7 @@ class nepiada(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         # Discrete movement, either up, down, stay, left or right.
-        return Discrete(5)
+        return Discrete(9)
 
     def render(self):
         """
