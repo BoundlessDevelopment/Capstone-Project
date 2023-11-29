@@ -33,6 +33,7 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
     arrangement_cost /= length
 
     # Calculate the target neighbour cost
+    num_neighbours = len(target_neighbours)
     for curr_agent_name, target_relative_position in target_neighbours.items():
         assert beliefs[agent_name] is not None
 
@@ -47,6 +48,10 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
             + (curr_agent_position[1] - agent_position[1] - target_relative_position[1])
             ** 2
         )
+
+    # Normalize the target neighbour cost (local arrangement cost)
+    if (num_neighbours != 0):
+        target_neighbor_cost /= num_neighbours
 
     # Return weighted cost
     return (config.global_reward_weight * arrangement_cost) + (
