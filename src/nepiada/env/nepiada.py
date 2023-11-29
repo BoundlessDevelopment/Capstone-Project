@@ -11,11 +11,11 @@ from utils.config import Config
 from utils.world import World
 from utils.agent import AgentType
 import pygame
+
 import copy
 from collections import defaultdict
 import os 
 import matplotlib.pyplot as plt 
-
 
 def parallel_env(config: Config):
     """
@@ -84,7 +84,7 @@ class nepiada(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         # Discrete movement, either up, down, stay, left or right.
-        return Discrete(5)
+        return Discrete(len(self.config.possible_moves))
 
     def render(self):
         """
@@ -153,9 +153,9 @@ class nepiada(ParallelEnv):
             for target_agent_name in self.agents:
                 incoming_communcation_messages = {}
 
-                if not observation[
-                    target_agent_name
-                ]:  # Must estimate where the agent is via communication
+                if not observation[target_agent_name]:
+                    # Must estimate where the agent is via communication
+                    
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
@@ -226,7 +226,6 @@ class nepiada(ParallelEnv):
         plt.legend()
         plt.savefig(f'all_traj.png')
         plt.close()  # Close the plot to free up memory
-
 
     def reset(self, seed=None, options=None):
         """
@@ -353,9 +352,10 @@ class nepiada(ParallelEnv):
                 # Drone collided with boundary
                 pass
 
-        if collided_drones: 
-            assert False, 'We should be allowing for multiple drones to occupy the same position'
-
+        if collided_drones:
+            assert (
+                False
+            ), "We should be allowing for multiple drones to occupy the same position"
 
     def get_rewards(self):
         """
@@ -386,7 +386,6 @@ class nepiada(ParallelEnv):
 
         # Add each agents reward based on their target neighbours
         for agent_name in self.agents:
-            deviation_from_neighbours = 0
             agent = self.world.agents[agent_name]
             agent_x = agent.p_pos[0]
             agent_y = agent.p_pos[1]

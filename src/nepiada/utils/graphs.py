@@ -104,7 +104,6 @@ class Graph:
             # Blit this surface onto the main screen surface
             self.screen.blit(circle_surface, (agent_pixel_pos[0] - circle_radius, agent_pixel_pos[1] - circle_radius))
 
-
     def _draw_target(self, radius=4):
         # Convert grid positions to pixel positions for drawing
         target_pos = (
@@ -115,6 +114,7 @@ class Graph:
         pygame.draw.circle(
             self.screen, color, target_pos, self.cell_size // radius
         )
+
     def _draw_target_x(self,width=3):
         # Convert grid positions to pixel positions for drawing
         target_pos = (self.dim / 2) * self.cell_size
@@ -122,7 +122,6 @@ class Graph:
         color = RED
         pygame.draw.line(self.screen, color, (target_pos, target_pos + self.cell_size), (target_pos + self.cell_size, target_pos),width=width)
         pygame.draw.line(self.screen, color, (target_pos, target_pos), (target_pos + self.cell_size, target_pos + self.cell_size,),width=width)
-
 
     # Function to draw the grid
     def _draw_grid(self):
@@ -138,6 +137,7 @@ class Graph:
             return
         self._draw_grid()
         self._draw_agents(radius=2)
+        self._draw_target(radius=4)
 
         #self._draw_target(radius=4)
         self._draw_target_x(width=6)

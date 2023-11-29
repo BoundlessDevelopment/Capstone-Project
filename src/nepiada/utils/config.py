@@ -27,7 +27,7 @@ class Config:
 
     # Initialization parameters
     dim: int = 2
-    size: int = 90
+    size: int = 50
     iterations: int = 50
 
     # Agent related parameterss

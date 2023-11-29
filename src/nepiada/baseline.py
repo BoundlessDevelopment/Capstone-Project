@@ -40,7 +40,6 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
         agent_position = beliefs[agent_name]
 
         if curr_agent_position is None:
-            # What do we do here?
             continue
         target_neighbor_cost += np.sqrt(
             (curr_agent_position[0] - agent_position[0] - target_relative_position[0])
@@ -49,8 +48,10 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
             ** 2
         )
 
-    # Return cost, should this be weighted?
-    return (config.global_reward_weight * arrangement_cost) + (config.local_reward_weight * target_neighbor_cost)
+    # Return weighted cost
+    return (config.global_reward_weight * arrangement_cost) + (
+        config.local_reward_weight * target_neighbor_cost
+    )
 
 
 def create_beliefs_with_obs(agent_name, observations, all_agents):
@@ -84,7 +85,10 @@ def strip_extreme_values_and_update_beliefs(
     for current_agent in all_agents:
         if current_agent == agent_name or new_beliefs[current_agent] is not None:
             continue
-        if current_agent not in incoming_messages or incoming_messages[current_agent] is None:
+        if (
+            current_agent not in incoming_messages
+            or incoming_messages[current_agent] is None
+        ):
             # No incoming messages about this agent, keep previous state
             new_beliefs[current_agent] = curr_beliefs[current_agent]
             continue
@@ -96,14 +100,13 @@ def strip_extreme_values_and_update_beliefs(
             if comm_message is not None:
                 in_messages.append(comm_message)
 
-        # Strip the extreme values
         if curr_beliefs[current_agent] is None:
             # Average all the incoming messages for the case where we don't have an estimate for the current agent
             x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
             y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
             new_beliefs[current_agent] = (x_pos_mean, y_pos_mean)
             continue
-    
+            
         x_pos_deviation = []
         y_pos_deviation = []
         for message in in_messages:
@@ -135,13 +138,18 @@ def strip_extreme_values_and_update_beliefs(
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
+  
+    """
+    This function is called every step of the simulation. It is responsible for
+    calculating the cost for every possible action and choosing the action with
+    the lowest cost. It also updates the agent's beliefs with the new information
+    it has received.
+    """
     # Create new beliefs dict with observation information
-    new_beliefs = create_beliefs_with_obs(
-        agent_name,
-        observations,
-        env.agents
-    )
+    new_beliefs = create_beliefs_with_obs(agent_name, observations, env.agents)
     # If there are incoming messages, process them and update beliefs
+    # Incoming messages should never be None after the first step
+
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,
@@ -161,7 +169,12 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_instance.p_pos[1] + config.possible_moves[action][1],
         )
         action_costs[action] = calculate_cost(
-            agent_name, agent_instance.target_neighbour, new_beliefs, config.size, config
+
+            agent_name,
+            agent_instance.target_neighbour,
+            new_beliefs,
+            config.size,
+            config,
         )
 
     # Choose the action with the lowest cost
@@ -182,14 +195,20 @@ def main():
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
+    
     while env.agents:
         actions = {}
-        for c_agent in env.agents:
-            curr_agent = infos[c_agent]["agent_instance"]
+        for curr_agent_name in env.agents:
+            curr_agent_instance = infos[curr_agent_name]["agent_instance"]
             agent_action = step(
-                c_agent, curr_agent, observations[c_agent], infos[c_agent], env, env_config
+                curr_agent_name,
+                curr_agent_instance,
+                observations[curr_agent_name],
+                infos[curr_agent_name],
+                env,
+                env_config,
             )
-            actions[c_agent] = agent_action
+            actions[curr_agent_name] = agent_action
 
         observations, rewards, terminations, truncations, infos = env.step(actions)
 
