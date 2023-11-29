@@ -29,6 +29,7 @@ class Config:
     dim: int = 2
     size: int = 20
     iterations: int = 50
+    random_seed: int = 4
 
     # Agent related parameterss
     agent_grid_width: int = 2

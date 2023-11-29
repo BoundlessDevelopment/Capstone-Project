@@ -5,6 +5,8 @@ import itertools
 from enum import Enum
 from utils.config import Config
 
+# Make a seed for random
+np.random.seed(Config.random_seed)
 
 # Types of agents
 class AgentType(Enum):
