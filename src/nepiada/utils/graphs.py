@@ -19,7 +19,8 @@ class Graph:
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.cell_size = cell_size
-
+        self.screen_width = config.screen_width 
+        self.screen_height = config.screen_height
         ## An adjacency list for which agent can communicate with each other
         if self.full_communication:
             all_agents = [agent for agent in self.agents]
@@ -126,10 +127,10 @@ class Graph:
     # Function to draw the grid
     def _draw_grid(self):
         self.screen.fill(WHITE)
-        for x in range(0, WIDTH, self.cell_size):
-            pygame.draw.line(self.screen, BLACK, (x, 0), (x, HEIGHT))
-        for y in range(0, HEIGHT, self.cell_size):
-            pygame.draw.line(self.screen, BLACK, (0, y), (WIDTH, y))
+        for x in range(0, self.screen_width, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (x, 0), (x, self.screen_height))
+        for y in range(0, self.screen_height, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (0, y), (self.screen_width, y))
 
     def render_graph(self, type="obs"):
         if self.screen is None:
