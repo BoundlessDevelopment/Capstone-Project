@@ -2,7 +2,7 @@
 # Default: 0 - stay, 1 - up, 2 - down, 3 - left, 4 - right
 
 from utils.noise import GaussianNoise
-
+from .anim_consts import WIDTH, HEIGHT
 
 class Config:
     """
@@ -27,7 +27,7 @@ class Config:
 
     # Initialization parameters
     dim: int = 2
-    size: int = 20
+    size: int = 50
     iterations: int = 50
     random_seed: int = 4
 
@@ -55,11 +55,29 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
+    #screen_height: int = 400 
+    #screen_width: int = 400 
 
     def __init__(self):
-        pass
+        self._process_screen_size()
+        
+    def _process_screen_size(self): 
+        height = getattr(self,"screen_height",None) 
+        width = getattr(self,"screen_width",None)
+            
+        if width and height: 
+            return 
+        
+        if not height: 
+            height = HEIGHT * (max(self.size // 30, 0) + 1)
+            self.screen_height = height
 
-
+        if not width: 
+            width = WIDTH * (max(self.size // 30, 0) + 1)
+            self.screen_width = width
+        
+        return 
+    
 # Baseline specific configuration parameters
 class BaselineConfig(Config):
     D: int = 1

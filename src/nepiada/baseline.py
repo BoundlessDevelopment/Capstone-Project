@@ -111,7 +111,7 @@ def strip_extreme_values_and_update_beliefs(
             y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
             new_beliefs[current_agent] = (x_pos_mean, y_pos_mean)
             continue
-
+            
         x_pos_deviation = []
         y_pos_deviation = []
         for message in in_messages:
@@ -143,6 +143,7 @@ def strip_extreme_values_and_update_beliefs(
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
+  
     """
     This function is called every step of the simulation. It is responsible for
     calculating the cost for every possible action and choosing the action with
@@ -153,6 +154,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     new_beliefs = create_beliefs_with_obs(agent_name, observations, env.agents)
     # If there are incoming messages, process them and update beliefs
     # Incoming messages should never be None after the first step
+
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,
@@ -172,6 +174,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_instance.p_pos[1] + config.possible_moves[action][1],
         )
         action_costs[action] = calculate_cost(
+
             agent_name,
             agent_instance.target_neighbour,
             new_beliefs,
@@ -197,6 +200,7 @@ def main():
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
+    
     while env.agents:
         actions = {}
         for curr_agent_name in env.agents:

@@ -1,4 +1,4 @@
-WIDTH, HEIGHT = 600, 600
+WIDTH, HEIGHT = 400, 400
 FPS = 60
 
 # Colors
