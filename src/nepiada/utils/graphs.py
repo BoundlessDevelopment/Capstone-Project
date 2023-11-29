@@ -19,7 +19,8 @@ class Graph:
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.cell_size = cell_size
-
+        self.screen_width = config.screen_width 
+        self.screen_height = config.screen_height
         ## An adjacency list for which agent can communicate with each other
         if self.full_communication:
             all_agents = [agent for agent in self.agents]
@@ -85,18 +86,23 @@ class Graph:
             ),
         )
 
-    def _draw_agents(self, radius=2):
-        # Draw the agents and the observations
+    def _draw_agents(self, radius=2, opacity=64):
+        # Draw the agents and the observations with opacity
         for agent_name, agent in self.agents.items():
             # Convert grid positions to pixel positions for drawing
             agent_pixel_pos = (
-                agent.p_pos[0] * self.cell_size + self.cell_size // 2,
-                agent.p_pos[1] * self.cell_size + self.cell_size // 2,
+                int(agent.p_pos[0] * self.cell_size + self.cell_size // 2),
+                int(agent.p_pos[1] * self.cell_size + self.cell_size // 2),
             )
             color = BLUE if "truthful" in agent_name else RED
-            pygame.draw.circle(
-                self.screen, color, agent_pixel_pos, self.cell_size // radius
-            )
+            circle_radius = self.cell_size // radius
+
+            # Create a new surface with an alpha channel for transparency
+            circle_surface = pygame.Surface((2 * circle_radius, 2 * circle_radius), pygame.SRCALPHA)
+            pygame.draw.circle(circle_surface, color + (opacity,), (circle_radius, circle_radius), circle_radius)
+
+            # Blit this surface onto the main screen surface
+            self.screen.blit(circle_surface, (agent_pixel_pos[0] - circle_radius, agent_pixel_pos[1] - circle_radius))
 
     def _draw_target(self, radius=4):
         # Convert grid positions to pixel positions for drawing
@@ -109,13 +115,21 @@ class Graph:
             self.screen, color, target_pos, self.cell_size // radius
         )
 
+    def _draw_target_x(self,width=3):
+        # Convert grid positions to pixel positions for drawing
+        target_pos = (self.dim / 2) * self.cell_size
+
+        color = RED
+        pygame.draw.line(self.screen, color, (target_pos, target_pos + self.cell_size), (target_pos + self.cell_size, target_pos),width=width)
+        pygame.draw.line(self.screen, color, (target_pos, target_pos), (target_pos + self.cell_size, target_pos + self.cell_size,),width=width)
+
     # Function to draw the grid
     def _draw_grid(self):
         self.screen.fill(WHITE)
-        for x in range(0, WIDTH, self.cell_size):
-            pygame.draw.line(self.screen, BLACK, (x, 0), (x, HEIGHT))
-        for y in range(0, HEIGHT, self.cell_size):
-            pygame.draw.line(self.screen, BLACK, (0, y), (WIDTH, y))
+        for x in range(0, self.screen_width, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (x, 0), (x, self.screen_height))
+        for y in range(0, self.screen_height, self.cell_size):
+            pygame.draw.line(self.screen, BLACK, (0, y), (self.screen_width, y))
 
     def render_graph(self, type="obs"):
         if self.screen is None:
@@ -124,6 +138,9 @@ class Graph:
         self._draw_grid()
         self._draw_agents(radius=2)
         self._draw_target(radius=4)
+
+        #self._draw_target(radius=4)
+        self._draw_target_x(width=6)
 
         # Draw the agents and the observations
         observations = self.obs if type == "obs" else self.comm

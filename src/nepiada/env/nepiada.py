@@ -12,6 +12,10 @@ from utils.world import World
 from utils.agent import AgentType
 import pygame
 
+import copy
+from collections import defaultdict
+import os 
+import matplotlib.pyplot as plt 
 
 def parallel_env(config: Config):
     """
@@ -111,6 +115,8 @@ class nepiada(ParallelEnv):
         user is no longer using the environment.
         """
         pygame.quit()
+        # Before quiting write out the graphs for each trajectory 
+        self._dump_pos_graphs()
         pass
 
     def get_observations(self):
@@ -149,6 +155,7 @@ class nepiada(ParallelEnv):
 
                 if not observation[target_agent_name]:
                     # Must estimate where the agent is via communication
+                    
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
@@ -183,6 +190,43 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
+    def _update_agents_pos(self): 
+        for agent in self.agents: 
+            latest_pos = self.world.get_agent(agent_name=agent).p_pos
+            self.agents_pos[agent]['p_pos'].append(latest_pos) 
+            self.agents_pos[agent]['target_dist'].append(self.world.get_target_distance(latest_pos))
+
+    def _dump_pos_graphs(self): 
+        for agent_name,p_pos_dict in self.agents_pos.items(): 
+
+            all_pos = p_pos_dict['target_dist']
+            #all_dists = p_pos_dict['target_dist']
+            plt.figure(figsize=(10, 6))  # You can adjust the figure size
+            plt.plot(all_pos, label=f'Distance of {agent_name}',marker='o')
+            plt.xlabel('Steps')
+            plt.ylabel('Distance to Target')
+            plt.title(f'Distance Trajectory of {agent_name}')
+            plt.legend()
+            plt.grid(True)  # Adds a grid for better readability
+            plt.savefig(f'{agent_name}_traj.png')
+            plt.close()  # Close the plot to free up memory
+
+        plt.figure(figsize=(10, 6))  # You can adjust the figure size
+
+        for agent_name,p_pos_dict in self.agents_pos.items(): 
+
+            all_pos = p_pos_dict['target_dist']
+            #all_dists = p_pos_dict['target_dist']
+            plt.plot(all_pos, label=f'Distance of {agent_name}',marker='x')
+            plt.grid(True)  # Adds a grid for better readability
+        
+        plt.xlabel('Steps')
+        plt.ylabel('Distance to Target')
+        plt.title(f'Evolution of Agent Distances to Target')
+        plt.legend()
+        plt.savefig(f'all_traj.png')
+        plt.close()  # Close the plot to free up memory
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -193,6 +237,11 @@ class nepiada(ParallelEnv):
         """
         self.agents = self.possible_agents[:]
         print("All Agents: ", str(self.agents))
+
+        # A list for each agent to show distance from final target
+        self.agents_pos = defaultdict(lambda: defaultdict(list))
+
+        self._update_agents_pos()
 
         self.num_moves = 0
 
@@ -249,6 +298,9 @@ class nepiada(ParallelEnv):
 
         # Update drone positions
         self.move_drones(actions)
+
+        # Update the running lists keeping track of positions
+        self._update_agents_pos()
 
         # Get the updated rewards
         # TODO: Account for large negative rewards for collision or off-boundary moves

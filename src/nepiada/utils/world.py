@@ -24,11 +24,11 @@ class World:
         # Set each agent's adjacent target neighbours
         self.__initialize_target_neighbours(self.num_agents, config)
 
-        self.screen = self._init_pygame()
+        self.screen = self._init_pygame(config.screen_height,config.screen_width)
         # Initialize the Grid
         self.grid = Grid(config)
         self.grid.save_agent_types(self.agents)
-        cell_size = self.grid.get_cell_size(WIDTH)
+        cell_size = self.grid.get_cell_size(config.screen_width)
 
         # Initialize the graphs
         self.graph = Graph(config, self.agents, screen=self.screen, cell_size=cell_size)
@@ -44,12 +44,12 @@ class World:
         self.target_x = config.size / 2
         self.target_y = config.size / 2
 
-    def _init_pygame(self):
+    def _init_pygame(self,width=WIDTH,height=HEIGHT):
         # Initialize Pygame
         pygame.init()
 
         # Setup the display
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Agent Observations")
         return screen
 
@@ -136,6 +136,13 @@ class World:
 
     def get_agent(self, agent_name):
         return self.agents[agent_name]
+    
+    def get_target_distance(self,p_pos): 
+        try: 
+            return ((self.target_x - p_pos[0]) ** 2 + (self.target_y - p_pos[1]) ** 2) ** 0.5 
+        except: 
+            breakpoint()
+    
 
     # return all entities in the world
     @property

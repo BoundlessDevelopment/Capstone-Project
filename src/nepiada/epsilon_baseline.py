@@ -5,7 +5,6 @@ import env.nepiada as nepiada
 from utils.config import EpsilonBaselineConfig
 import pygame
 
-
 def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
     """
     This function calculates the cost value given the agent's beliefs.
@@ -49,12 +48,11 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
             + (curr_agent_position[1] - agent_position[1] - target_relative_position[1])
             ** 2
         )
-
+        
     # Return weighted cost
     return (config.global_reward_weight * arrangement_cost) + (
         config.local_reward_weight * target_neighbor_cost
     )
-
 
 def create_beliefs_with_obs(agent_name, observations, all_agents):
     """
@@ -91,6 +89,7 @@ def strip_extreme_values_and_update_beliefs(
             current_agent not in incoming_messages
             or incoming_messages[current_agent] is None
         ):
+          
             # No incoming messages about this agent, keep previous state
             new_beliefs[current_agent] = curr_beliefs[current_agent]
             continue
@@ -140,6 +139,7 @@ def strip_extreme_values_and_update_beliefs(
 
 
 def step(agent_name, agent_instance, observations, infos, env, config):
+
     """
     This function is called every step of the simulation. It is responsible for
     calculating the cost for every possible action and choosing the action with
@@ -150,6 +150,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     new_beliefs = create_beliefs_with_obs(agent_name, observations, env.agents)
     # If there are incoming messages, process them and update beliefs
     # Incoming messages should never be None after the first step
+
     if "incoming_messages" in infos:
         strip_extreme_values_and_update_beliefs(
             config.D,
