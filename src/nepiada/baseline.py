@@ -188,14 +188,18 @@ def step(agent_name, agent_instance, observations, infos, env, config):
 
     return min_action
 
+def main(included_data=None):
+    if included_data is None:
+        included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
-def main():
     env_config = BaselineConfig()
-
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
-    
+    results = []  # List to store results
+
+    agents = env.agents
+
     while env.agents:
         actions = {}
         for curr_agent_name in env.agents:
@@ -211,9 +215,25 @@ def main():
             actions[curr_agent_name] = agent_action
 
         observations, rewards, terminations, truncations, infos = env.step(actions)
+        step_result = {}
+        if "observations" in included_data:
+            step_result['observations'] = observations
+        if "rewards" in included_data:
+            step_result['rewards'] = rewards
+        if "terminations" in included_data:
+            step_result['terminations'] = terminations
+        if "truncations" in included_data:
+            step_result['truncations'] = truncations
+        if "infos" in included_data:
+            step_result['infos'] = infos
+
+        # Store relevant information in results
+        results.append(step_result)
 
     env.close()
     pygame.quit()
+
+    return results, agents, env_config, env  # Return the collected results
 
 
 if __name__ == "__main__":
