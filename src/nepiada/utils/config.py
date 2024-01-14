@@ -41,7 +41,7 @@ class Config:
     dynamic_obs: bool = True
     obs_radius: int = 10
     dynamic_comms: bool = True
-    dynamic_comms_radius: int = 20
+    dynamic_comms_radius: int = 15
     dynamic_comms_enforce_minimum: int = 3
     noise = GaussianNoise()
 
