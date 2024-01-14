@@ -27,7 +27,14 @@ class SimulationTester:
 
         The reward of the agents in turn are calculated using two metrics: global arrangement 
         and local arrangement costs, which are described in Pavel and Dian's paper.
+
+        IMPORTANT: An ideal / globally optimal NE will have a score of zero. Lower the score the closer 
+        it is to globally optimal NE.
         """
+
+        if not hasattr(self, 'results'):
+            print("Cannot compute convergence score before a simulation is run. Run the simulation first.")
+            return -1
 
         # Get the cost from the latest reward functions
         net_cost = 0.0
@@ -37,7 +44,7 @@ class SimulationTester:
             net_cost += reward
             num_agents += 1
 
-        return net_cost / num_agents
+        return -1 * (net_cost / num_agents)
 
     def print_results(self):
         """
