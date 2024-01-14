@@ -29,13 +29,15 @@ class Graph:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
 
-            print("Graphs INFO: Static Communication Initialized | All agents can communicate with each other")
+            print("Graphs INFO: Static Communication Graph Initialized | All agents can communicate with each other")
         else:
             self.comm = {agent: [] for agent in self.agents}
-            print(f"Graphs INFO: Dynamic Communication Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents")
+            print(f"Graphs INFO: Dynamic Communication Graph Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents")
 
         # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
+        if self.dynamic_obs:
+            print(f"Graphs INFO: Dynamic Observation Graph Initialized | Observation Radius: {self.observation_radius} units")
 
     def _update_obs_graph(self, agents):
         if self.dynamic_obs:
