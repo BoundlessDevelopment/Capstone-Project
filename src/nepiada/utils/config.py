@@ -28,7 +28,8 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-    iterations: int = 50
+    iterations: int = 5
+    simulation_dir: str = "plots"
 
     # Agent related parameterss
     agent_grid_width: int = 3

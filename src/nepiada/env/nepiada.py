@@ -63,6 +63,9 @@ class nepiada(ParallelEnv):
         # Initializing agents and grid
         self.world = World(config)
 
+        # Create a folder called plots to save the simulation plots
+        os.makedirs(config.simulation_dir, mode=0o777, exist_ok=True)
+
         # Add agent_names to possible agents
         # Note that each name is unique and hence is an ID
         for agent_name in self.world.agents:
@@ -207,7 +210,6 @@ class nepiada(ParallelEnv):
             plt.title(f'Distance Trajectory of {agent_name}')
             plt.legend()
             plt.grid(True)  # Adds a grid for better readability
-            os.makedirs('plots', mode=0o777, exist_ok=True)
             plt.savefig(f'plots/{agent_name}_traj.png')
             plt.close()  # Close the plot to free up memory
 
@@ -224,7 +226,6 @@ class nepiada(ParallelEnv):
         plt.ylabel('Distance to Target')
         plt.title(f'Evolution of Agent Distances to Target')
         plt.legend()
-        os.makedirs('plots', mode=0o777, exist_ok=True)
         plt.savefig(f'plots/all_traj.png')
         plt.close()  # Close the plot to free up memory
 
@@ -383,6 +384,8 @@ class nepiada(ParallelEnv):
 
         global_arrangement_vector = np.divide(global_arrangement_vector, len(self.agents))
         global_arrangement_reward = np.sqrt(global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2)
+
+        # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
         self.world.graph.global_arrangement_vector = global_arrangement_vector
 
         # Add each agents reward based on their target neighbours

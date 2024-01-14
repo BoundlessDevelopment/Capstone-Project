@@ -9,9 +9,6 @@ from .anim_consts import *
 
 class World:
     def __init__(self, config):
-        # The global arrangement vector that tracks the agents distance from the center
-        self.global_arrangement_vector = [0, 0]
-
         # Check if the number of agents match the agents target size
         assert (
             config.num_good_agents + config.num_adversarial_agents
@@ -34,7 +31,7 @@ class World:
         cell_size = self.grid.get_cell_size(config.screen_width)
 
         # Initialize the graphs
-        self.graph = Graph(config, self.agents, np.array([0.0, 0.0]), screen=self.screen, cell_size=cell_size)
+        self.graph = Graph(config, self.agents, screen=self.screen, cell_size=cell_size)
         self.graph.screen = self.screen
 
         # Update the grid with agent's position

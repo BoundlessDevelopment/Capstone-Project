@@ -6,12 +6,12 @@ from .anim_consts import *
 
 
 class Graph:
-    def __init__(self, config, agents, global_arrangement_vector, screen=None, cell_size=0):
+    def __init__(self, config, agents, screen=None, cell_size=0):
         print("Graphs have been initialized")
 
         self.dim = config.size
         self.agents = agents
-        self.global_arrangement_vector = global_arrangement_vector
+        self.global_arrangement_vector = np.array([0, 0]) # The global arrangement vector that tracks the agents distance from the center
         self.dynamic_obs = config.dynamic_obs
         self.full_communication = config.full_communication
         self.observation_radius = config.obs_radius
@@ -23,14 +23,14 @@ class Graph:
         self.screen_width = config.screen_width 
         self.screen_height = config.screen_height
 
-        ## An adjacency list for which agent can communicate with each other
+        # An adjacency list for which agent can communicate with each other
         if self.full_communication:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
         else:
             self.comm = {agent: [] for agent in self.agents}
 
-        ## An adjacency list for which agent can observe each other
+        # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
 
     def update_graphs(self, agents):

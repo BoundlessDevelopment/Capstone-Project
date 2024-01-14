@@ -44,7 +44,10 @@ class SimulationTester:
             net_cost += reward
             num_agents += 1
 
-        return -1 * (net_cost / num_agents)
+        convergence_score = -1 * (net_cost / num_agents)
+        assert convergence_score >= 0, "Convergence score cannot be negative"
+
+        return convergence_score
 
     def print_results(self):
         """
