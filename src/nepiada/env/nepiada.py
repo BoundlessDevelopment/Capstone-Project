@@ -210,7 +210,7 @@ class nepiada(ParallelEnv):
             plt.title(f'Distance Trajectory of {agent_name}')
             plt.legend()
             plt.grid(True)  # Adds a grid for better readability
-            plt.savefig(f'plots/{agent_name}_traj.png')
+            plt.savefig(f'{self.config.simulation_dir}/{agent_name}_traj.png')
             plt.close()  # Close the plot to free up memory
 
         plt.figure(figsize=(10, 6))  # You can adjust the figure size
@@ -226,7 +226,7 @@ class nepiada(ParallelEnv):
         plt.ylabel('Distance to Target')
         plt.title(f'Evolution of Agent Distances to Target')
         plt.legend()
-        plt.savefig(f'plots/all_traj.png')
+        plt.savefig(f'{self.config.simulation_dir}/all_traj.png')
         plt.close()  # Close the plot to free up memory
 
     def reset(self, seed=None, options=None):

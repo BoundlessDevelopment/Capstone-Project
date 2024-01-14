@@ -53,7 +53,7 @@ def save_plot(figure, name):
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
     plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
-    figure.savefig(f"plots/{name}.pdf", format='pdf', bbox_inches='tight', pad_inches=0.01)
+    figure.savefig(f"{name}.pdf", format='pdf', bbox_inches='tight', pad_inches=0.01)
 
 class PlotErrorFigure(object):
     ''' Context Manager for plotting the error figures '''
