@@ -13,7 +13,9 @@ class Graph:
         self.agents = agents
         self.global_arrangement_vector = np.array([0, 0]) # The global arrangement vector that tracks the agents distance from the center
         self.dynamic_obs = config.dynamic_obs
-        self.full_communication = config.full_communication
+        self.dynamic_comms = config.dynamic_comms
+        self.dynamic_comms_radius = config.dynamic_comms_radius
+        self.dynamic_comms_enforce_minimum = config.dynamic_comms_enforce_minimum
         self.observation_radius = config.obs_radius
         self.num_agents = config.num_good_agents + config.num_adversarial_agents
         self.obs_arrows = []
@@ -22,9 +24,8 @@ class Graph:
         self.cell_size = cell_size
         self.screen_width = config.screen_width 
         self.screen_height = config.screen_height
-
-        # An adjacency list for which agent can communicate with each other
-        if self.full_communication:
+        ## An adjacency list for which agent can communicate with each other
+        if not self.dynamic_comms:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
         else:

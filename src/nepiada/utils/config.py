@@ -40,7 +40,9 @@ class Config:
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 10
-    full_communication: bool = True
+    dynamic_comms: bool = True
+    dynamic_comms_radius: int = 20
+    dynamic_comms_enforce_minimum: int = 3
     noise = GaussianNoise()
 
     # Agent update parameters
