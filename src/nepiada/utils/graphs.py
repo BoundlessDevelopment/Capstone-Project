@@ -7,7 +7,6 @@ from .anim_consts import *
 
 class Graph:
     def __init__(self, config, agents, screen=None, cell_size=0):
-
         self.dim = config.size
         self.agents = agents
         self.global_arrangement_vector = np.array([0, 0]) # The global arrangement vector that tracks the agents distance from the center
@@ -29,17 +28,30 @@ class Graph:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
 
-            print("Graphs INFO: Static Communication Graph Initialized | All agents can communicate with each other")
+            print(
+                "Graphs INFO: Static Communication Graph Initialized | All agents can communicate with each other"
+            )
         else:
             self.comm = {agent: [] for agent in self.agents}
-            print(f"Graphs INFO: Dynamic Communication Graph Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents")
+            print(
+                f"Graphs INFO: Dynamic Communication Graph Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents"
+            )
 
         # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
         if self.dynamic_obs:
-            print(f"Graphs INFO: Dynamic Observation Graph Initialized | Observation Radius: {self.observation_radius} units")
+            print(
+                f"Graphs INFO: Dynamic Observation Graph Initialized | Observation Radius: {self.observation_radius} units"
+            )
 
     def _update_obs_graph(self, agents):
+        """
+        If dynamic observation graph is enabled, this function will update the observation graph based on the current positions of the agents.
+        If static observation graph, this function will do nothing since the observation graph is already configured.
+        
+        params:
+            agents: A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        """
         if self.dynamic_obs:
             # Reset the graph
             self.obs = {agent: [] for agent in agents}
@@ -64,6 +76,15 @@ class Graph:
             pass
 
     def _update_comm_graph(self, agents):
+        """
+        If dynamic communication graph is enabled, this function will update the communication graph based on the current positions of the agents. 
+        It will also enforce a minimum number of agents that can communicate with each other, if the number of agents that can communicate with each other
+        is less than the minimum specified by the configuration.
+        If static communication graph, this function will do nothing since the communication graph is already configured to allow for full communication.
+    
+        params:
+            agents: A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        """
         if self.dynamic_comms:
             # Reset the graph
             self.comm = {agent: [] for agent in agents}
