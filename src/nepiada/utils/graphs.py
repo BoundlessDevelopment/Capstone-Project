@@ -97,10 +97,10 @@ class Graph:
                     )
 
                     # Add the closest agents to the communication graph to reach minimum
-                    for distance, agent_name in distances_to_agents_not_added[
+                    for distance, other_agent_name in distances_to_agents_not_added[
                         :amount_missing
                     ]:
-                        self.comm[agent_name].append(agent_name)
+                        self.comm[agent_name].append(other_agent_name)
         else:
             # Do not update the communication graph, because it has been configured to be static
             pass
