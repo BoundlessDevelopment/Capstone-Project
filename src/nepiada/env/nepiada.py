@@ -381,6 +381,7 @@ class nepiada(ParallelEnv):
             agent = self.world.agents[agent_name]
             global_arrangement_vector += np.array([(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])])
 
+        global_arrangement_vector = np.divide(global_arrangement_vector, len(self.agents))
         global_arrangement_reward = np.sqrt(global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2)
         self.world.graph.global_arrangement_vector = global_arrangement_vector
 

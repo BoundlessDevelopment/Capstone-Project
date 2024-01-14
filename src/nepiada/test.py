@@ -20,22 +20,24 @@ class SimulationTester:
         """
         self.results, self.agents, self.config, self.env = main(included_data=self.included_data)
 
-    def calculate_cost(self):
+    def calculate_convergence_score(self):
         """
-        This function calculates the cost value given the agent's beliefs.
-        It is based on where each agent is actually located at the end of the simulation.
+        This function calculates the convergence score based on the average reward acrooss all agent 
+        in the last iteration of the algorithm.
 
-        It is calculated using a similar function to the cost function in
-        Diane and Prof. Pavel's Paper, however modified to the discrete space.
+        The reward of the agents in turn are calculated using two metrics: global arrangement 
+        and local arrangement costs, which are described in Pavel and Dian's paper.
         """
 
         # Get the cost from the latest reward functions
-        net_cost = 0
+        net_cost = 0.0
         last_iteration = self.results[self.config.iterations - 1]
+        num_agents = 0
         for agent, reward in last_iteration["rewards"].items():
             net_cost += reward
+            num_agents += 1
 
-        return net_cost
+        return net_cost / num_agents
 
     def print_results(self):
         """
@@ -48,7 +50,7 @@ class SimulationTester:
         for step_result in self.results:
             print(step_result)
 
-        print("\nCalculating net cost, ideal NE is (0): ", self.calculate_cost())
+        print("\nCalculating score, ideal NE is (0): ", self.calculate_convergence_score())
 
 # Example usage
 if __name__ == "__main__":
