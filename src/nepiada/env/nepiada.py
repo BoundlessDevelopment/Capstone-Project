@@ -58,7 +58,6 @@ class nepiada(ParallelEnv):
         self.total_agents = config.num_good_agents + config.num_adversarial_agents
         self.config = config
         self.possible_agents = []
-
         self.render_mode = render_mode
 
         # Initializing agents and grid
@@ -373,19 +372,17 @@ class nepiada(ParallelEnv):
         """
         rewards = {}
 
-        # Get the average distance of the agents from target
+        # Get the average vector distance of the agents from target
         target_x = self.config.size / 2
         target_y = self.config.size / 2
-        global_arrangement_reward = 0
+        global_arrangement_vector = np.array([0.0, 0.0])
 
         for agent_name in self.agents:
             agent = self.world.agents[agent_name]
-            distance = np.sqrt(
-                (agent.p_pos[0] - target_x) ** 2 + (agent.p_pos[1] - target_y) ** 2
-            )
-            global_arrangement_reward += distance
+            global_arrangement_vector += np.array([(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])])
 
-        global_arrangement_reward = global_arrangement_reward / len(self.agents)
+        global_arrangement_reward = np.sqrt(global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2)
+        self.world.graph.global_arrangement_vector = global_arrangement_vector
 
         # Add each agents reward based on their target neighbours
         for agent_name in self.agents:

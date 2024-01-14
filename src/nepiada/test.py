@@ -28,25 +28,14 @@ class SimulationTester:
         It is calculated using a similar function to the cost function in
         Diane and Prof. Pavel's Paper, however modified to the discrete space.
         """
-    
-        arrangement_cost = 0
-        target_neighbor_cost = 0
 
-        target_x = target_y = self.config.size/2
+        # Get the cost from the latest reward functions
+        net_cost = 0
+        last_iteration = self.results[self.config.iterations - 1]
+        for agent, reward in last_iteration["rewards"].items():
+            net_cost += reward
 
-        length = len(self.agents)
-        
-        # Calculate the global arrangement cost
-        for agent_name in self.agents:
-            beliefs = self.results[len(self.results)-1]["infos"][agent_name]["beliefs"]
-            arrangement_cost += np.sqrt(
-                (beliefs[agent_name][0] - target_x) ** 2 + (beliefs[agent_name][1] - target_y) ** 2
-            )
-
-        arrangement_cost /= length
-
-        # Return weighted cost
-        return arrangement_cost + target_neighbor_cost
+        return net_cost
 
     def print_results(self):
         """
@@ -58,7 +47,8 @@ class SimulationTester:
 
         for step_result in self.results:
             print(step_result)
-        print(self.calculate_cost())
+
+        print("\nCalculating net cost, ideal NE is (0): ", self.calculate_cost())
 
 # Example usage
 if __name__ == "__main__":

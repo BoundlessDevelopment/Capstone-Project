@@ -9,6 +9,9 @@ from .anim_consts import *
 
 class World:
     def __init__(self, config):
+        # The global arrangement vector that tracks the agents distance from the center
+        self.global_arrangement_vector = [0, 0]
+
         # Check if the number of agents match the agents target size
         assert (
             config.num_good_agents + config.num_adversarial_agents
@@ -23,15 +26,15 @@ class World:
 
         # Set each agent's adjacent target neighbours
         self.__initialize_target_neighbours(self.num_agents, config)
-
         self.screen = self._init_pygame(config.screen_height,config.screen_width)
+        
         # Initialize the Grid
         self.grid = Grid(config)
         self.grid.save_agent_types(self.agents)
         cell_size = self.grid.get_cell_size(config.screen_width)
 
         # Initialize the graphs
-        self.graph = Graph(config, self.agents, screen=self.screen, cell_size=cell_size)
+        self.graph = Graph(config, self.agents, np.array([0.0, 0.0]), screen=self.screen, cell_size=cell_size)
         self.graph.screen = self.screen
 
         # Update the grid with agent's position
@@ -40,7 +43,7 @@ class World:
         # Update the graphs with agent's position
         self.graph.update_graphs(self.agents)
 
-        ## The target where all the drones want to reach
+        # The target where all the drones want to reach
         self.target_x = config.size / 2
         self.target_y = config.size / 2
 
