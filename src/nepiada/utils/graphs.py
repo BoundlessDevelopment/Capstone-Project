@@ -7,7 +7,6 @@ from .anim_consts import *
 
 class Graph:
     def __init__(self, config, agents, screen=None, cell_size=0):
-        print("Graphs have been initialized")
 
         self.dim = config.size
         self.agents = agents
@@ -29,8 +28,11 @@ class Graph:
         if not self.dynamic_comms:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
+
+            print("Graphs INFO: Static Communication Initialized | All agents can communicate with each other")
         else:
             self.comm = {agent: [] for agent in self.agents}
+            print(f"Graphs INFO: Dynamic Communication Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents")
 
         # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
@@ -90,9 +92,13 @@ class Graph:
                     # Sort the distances to agents not added in ascending order
                     distances_to_agents_not_added.sort(key=lambda x: x[0])
 
-                    # Add the closest agents to the communication graph
+                    amount_missing = self.dynamic_comms_enforce_minimum - len(
+                        self.comm[agent_name]
+                    )
+
+                    # Add the closest agents to the communication graph to reach minimum
                     for distance, agent_name in distances_to_agents_not_added[
-                        : self.dynamic_comms_enforce_minimum
+                        :amount_missing
                     ]:
                         self.comm[agent_name].append(agent_name)
         else:
@@ -257,7 +263,7 @@ class Graph:
         self.clock.tick(FPS)
 
     def reset_graphs(self):
-        if self.full_communication:
+        if not self.dynamic_comms:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
         else:
