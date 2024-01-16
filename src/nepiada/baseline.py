@@ -21,16 +21,20 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
     target_y = grid_size / 2
 
     length = len(beliefs)
-    # Calculate the global arrangement cost
+    arrangement_cost_vector = np.array([0.0, 0.0])
+
+    # Calculate the global arrangement cost using vector distances
     for curr_agent_name, agent_belief in beliefs.items():
         if agent_belief is None:
             length -= 1
         else:
-            arrangement_cost += np.sqrt(
-                (agent_belief[0] - target_x) ** 2 + (agent_belief[1] - target_y) ** 2
-            )
+            arrangement_cost_vector += np.array([(agent_belief[0] - target_x), (target_y - agent_belief[1])])
 
-    arrangement_cost /= length
+    # Normalize the global arrangement_cost_vector
+    if (length != 0):
+        arrangement_cost_vector = np.divide(arrangement_cost_vector, length)
+
+    arrangement_cost = np.sqrt(arrangement_cost_vector[0] ** 2 + arrangement_cost_vector[1] ** 2)
 
     # Calculate the target neighbour cost
     for curr_agent_name, target_relative_position in target_neighbours.items():
@@ -188,14 +192,18 @@ def step(agent_name, agent_instance, observations, infos, env, config):
 
     return min_action
 
+def main(included_data=None):
+    if included_data is None:
+        included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
-def main():
     env_config = BaselineConfig()
-
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
-    
+    results = []  # List to store results
+
+    agents = env.agents
+
     while env.agents:
         actions = {}
         for curr_agent_name in env.agents:
@@ -211,10 +219,25 @@ def main():
             actions[curr_agent_name] = agent_action
 
         observations, rewards, terminations, truncations, infos = env.step(actions)
+        step_result = {}
+        if "observations" in included_data:
+            step_result['observations'] = observations
+        if "rewards" in included_data:
+            step_result['rewards'] = rewards
+        if "terminations" in included_data:
+            step_result['terminations'] = terminations
+        if "truncations" in included_data:
+            step_result['truncations'] = truncations
+        if "infos" in included_data:
+            step_result['infos'] = infos
+
+        # Store relevant information in results
+        results.append(step_result)
 
     env.close()
     pygame.quit()
 
+    return results, agents, env_config, env  # Return the collected results
 
 if __name__ == "__main__":
     main()

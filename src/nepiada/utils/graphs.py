@@ -11,6 +11,7 @@ class Graph:
 
         self.dim = config.size
         self.agents = agents
+        self.global_arrangement_vector = np.array([0, 0]) # The global arrangement vector that tracks the agents distance from the center
         self.dynamic_obs = config.dynamic_obs
         self.full_communication = config.full_communication
         self.observation_radius = config.obs_radius
@@ -21,14 +22,15 @@ class Graph:
         self.cell_size = cell_size
         self.screen_width = config.screen_width 
         self.screen_height = config.screen_height
-        ## An adjacency list for which agent can communicate with each other
+
+        # An adjacency list for which agent can communicate with each other
         if self.full_communication:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
         else:
             self.comm = {agent: [] for agent in self.agents}
 
-        ## An adjacency list for which agent can observe each other
+        # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
 
     def update_graphs(self, agents):
@@ -123,6 +125,16 @@ class Graph:
         pygame.draw.line(self.screen, color, (target_pos, target_pos + self.cell_size), (target_pos + self.cell_size, target_pos),width=width)
         pygame.draw.line(self.screen, color, (target_pos, target_pos), (target_pos + self.cell_size, target_pos + self.cell_size,),width=width)
 
+    def _draw_global_arrangement_vector(self, global_arrangement_vector):
+        # Draw the global arrangement vector which shows the distance of the agents centroid to the target
+        target_pos = (self.dim / 2) * self.cell_size + self.cell_size // 2
+        global_arrangement_vector[0] = (self.dim / 2) + global_arrangement_vector[0]
+        global_arrangement_vector[1] = (self.dim / 2) - global_arrangement_vector[1]
+
+        self._draw_arrow(
+            BLUE, [target_pos, target_pos], np.multiply(global_arrangement_vector, self.cell_size), head_size=5
+        )
+
     # Function to draw the grid
     def _draw_grid(self):
         self.screen.fill(WHITE)
@@ -135,12 +147,12 @@ class Graph:
         if self.screen is None:
             print("Not drawing anything ...")
             return
+        
         self._draw_grid()
         self._draw_agents(radius=2)
         self._draw_target(radius=4)
-
-        #self._draw_target(radius=4)
         self._draw_target_x(width=6)
+        self._draw_global_arrangement_vector(self.global_arrangement_vector)
 
         # Draw the agents and the observations
         observations = self.obs if type == "obs" else self.comm

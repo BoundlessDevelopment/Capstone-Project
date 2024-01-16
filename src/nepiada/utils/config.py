@@ -29,16 +29,17 @@ class Config:
     dim: int = 2
     size: int = 50
     iterations: int = 50
+    simulation_dir: str = "plots"
 
     # Agent related parameterss
-    agent_grid_width: int = 2
-    agent_grid_height: int = 2
-    num_good_agents: int = 3
-    num_adversarial_agents: int = 1
+    agent_grid_width: int = 3
+    agent_grid_height: int = 3
+    num_good_agents: int = 7
+    num_adversarial_agents: int = 2
 
     # Graph update parameters
     dynamic_obs: bool = True
-    obs_radius: int = 5
+    obs_radius: int = 10
     full_communication: bool = True
     noise = GaussianNoise()
 
