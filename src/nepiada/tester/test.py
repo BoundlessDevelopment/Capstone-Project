@@ -1,6 +1,9 @@
-# Import the main function from the simulation script
-from baseline import main
 import numpy as np
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
+
+# Import the main function from the simulation script
+from baseline import main as baseline_run
 import env.nepiada as nepiada
 
 class SimulationTester:
@@ -18,7 +21,7 @@ class SimulationTester:
         """
         Run the simulation and store the results.
         """
-        self.results, self.agents, self.config, self.env = main(included_data=self.included_data)
+        self.results, self.agents, self.config, self.env = baseline_run(included_data=self.included_data)
 
     def calculate_convergence_score(self):
         """
