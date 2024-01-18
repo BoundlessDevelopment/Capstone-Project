@@ -238,7 +238,7 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
-        print("All Agents: ", str(self.agents))
+        print("NEPIADA INFO: All Agents: ", str(self.agents))
 
         # A list for each agent to show distance from final target
         self.agents_pos = defaultdict(lambda: defaultdict(list))
@@ -270,6 +270,7 @@ class nepiada(ParallelEnv):
 
         self.initialize_beliefs()
 
+        print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
         return self.observations, self.infos
 
     def step(self, actions):

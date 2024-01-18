@@ -7,40 +7,54 @@ from .anim_consts import *
 
 class Graph:
     def __init__(self, config, agents, screen=None, cell_size=0):
-        print("Graphs have been initialized")
-
         self.dim = config.size
         self.agents = agents
         self.global_arrangement_vector = np.array([0, 0]) # The global arrangement vector that tracks the agents distance from the center
         self.dynamic_obs = config.dynamic_obs
-        self.full_communication = config.full_communication
+        self.dynamic_comms = config.dynamic_comms
+        self.dynamic_comms_radius = config.dynamic_comms_radius
+        self.dynamic_comms_enforce_minimum = config.dynamic_comms_enforce_minimum
         self.observation_radius = config.obs_radius
         self.num_agents = config.num_good_agents + config.num_adversarial_agents
         self.obs_arrows = []
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.cell_size = cell_size
-        self.screen_width = config.screen_width 
+        self.screen_width = config.screen_width
         self.screen_height = config.screen_height
 
-        # An adjacency list for which agent can communicate with each other
-        if self.full_communication:
+        ## An adjacency list for which agent can communicate with each other
+        if not self.dynamic_comms:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
+
+            print(
+                "Graphs INFO: Static Communication Graph Initialized | All agents can communicate with each other"
+            )
         else:
             self.comm = {agent: [] for agent in self.agents}
+            print(
+                f"Graphs INFO: Dynamic Communication Graph Initialized | Communication Radius: {self.dynamic_comms_radius} units | Enforced minimum number of agents per communication: {self.dynamic_comms_enforce_minimum} agents"
+            )
 
         # An adjacency list for which agent can observe each other
         self.obs = {agent: [] for agent in self.agents}
-
-    def update_graphs(self, agents):
-        # Update the agents
-        self.agents = agents
-
-        # Reset the graph
-        self.obs = {agent: [] for agent in agents}
-
         if self.dynamic_obs:
+            print(
+                f"Graphs INFO: Dynamic Observation Graph Initialized | Observation Radius: {self.observation_radius} units"
+            )
+
+    def _update_obs_graph(self, agents):
+        """
+        If dynamic observation graph is enabled, this function will update the observation graph based on the current positions of the agents.
+        If static observation graph, this function will do nothing since the observation graph is already configured.
+        
+        params:
+            agents: A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        """
+        if self.dynamic_obs:
+            # Reset the graph
+            self.obs = {agent: [] for agent in agents}
             for agent_name, agent in agents.items():
                 x_coord = agent.p_pos[0]
                 y_coord = agent.p_pos[1]
@@ -61,8 +75,68 @@ class Graph:
             # Do not update the observation graph, because it has been configured to be static
             pass
 
-        # Update communication graph here
-        # Nothing to do, as we have defined communication graph to be static
+    def _update_comm_graph(self, agents):
+        """
+        If dynamic communication graph is enabled, this function will update the communication graph based on the current positions of the agents. 
+        It will also enforce a minimum number of agents that can communicate with each other, if the number of agents that can communicate with each other
+        is less than the minimum specified by the configuration.
+        If static communication graph, this function will do nothing since the communication graph is already configured to allow for full communication.
+    
+        params:
+            agents: A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        """
+        if self.dynamic_comms:
+            # Reset the graph
+            self.comm = {agent: [] for agent in agents}
+            for agent_name, agent in agents.items():
+                x_coord = agent.p_pos[0]
+                y_coord = agent.p_pos[1]
+
+                distances_to_agents_not_added = []
+                # Update communication graph here
+                for other_agent_name, other_agent in agents.items():
+                    if other_agent_name != agent_name:
+                        # Calculate the distance between them
+                        delta_x = other_agent.p_pos[0] - x_coord
+                        delta_y = other_agent.p_pos[1] - y_coord
+
+                        distance = np.sqrt(delta_x**2 + delta_y**2)
+
+                        # If within communication radius add them to the graph
+                        # If not within the communication radius, add them to a list of agents that are not added,
+                        # for potential future addition based on enforcing minimum number of comm agents.
+                        if distance < self.dynamic_comms_radius:
+                            self.comm[agent_name].append(other_agent_name)
+                        else:
+                            distances_to_agents_not_added.append(
+                                (distance, other_agent_name)
+                            )
+                if len(self.comm[agent_name]) < self.dynamic_comms_enforce_minimum:
+                    # Sort the distances to agents not added in ascending order
+                    distances_to_agents_not_added.sort(key=lambda x: x[0])
+
+                    amount_missing = self.dynamic_comms_enforce_minimum - len(
+                        self.comm[agent_name]
+                    )
+
+                    # Add the closest agents to the communication graph to reach minimum
+                    for _, other_agent_name in distances_to_agents_not_added[
+                        :amount_missing
+                    ]:
+                        self.comm[agent_name].append(other_agent_name)
+        else:
+            # Do not update the communication graph, because it has been configured to be static
+            pass
+
+    def update_graphs(self, agents):
+        # Update the agents
+        self.agents = agents
+
+        # Update the observation graph
+        self._update_obs_graph(agents)
+
+        # Update the communication graph
+        self._update_comm_graph(agents)
 
         return
 
@@ -100,11 +174,24 @@ class Graph:
             circle_radius = self.cell_size // radius
 
             # Create a new surface with an alpha channel for transparency
-            circle_surface = pygame.Surface((2 * circle_radius, 2 * circle_radius), pygame.SRCALPHA)
-            pygame.draw.circle(circle_surface, color + (opacity,), (circle_radius, circle_radius), circle_radius)
+            circle_surface = pygame.Surface(
+                (2 * circle_radius, 2 * circle_radius), pygame.SRCALPHA
+            )
+            pygame.draw.circle(
+                circle_surface,
+                color + (opacity,),
+                (circle_radius, circle_radius),
+                circle_radius,
+            )
 
             # Blit this surface onto the main screen surface
-            self.screen.blit(circle_surface, (agent_pixel_pos[0] - circle_radius, agent_pixel_pos[1] - circle_radius))
+            self.screen.blit(
+                circle_surface,
+                (
+                    agent_pixel_pos[0] - circle_radius,
+                    agent_pixel_pos[1] - circle_radius,
+                ),
+            )
 
     def _draw_target(self, radius=4):
         # Convert grid positions to pixel positions for drawing
@@ -113,17 +200,30 @@ class Graph:
             (self.dim / 2) * self.cell_size + self.cell_size // 2,
         )
         color = BLACK
-        pygame.draw.circle(
-            self.screen, color, target_pos, self.cell_size // radius
-        )
+        pygame.draw.circle(self.screen, color, target_pos, self.cell_size // radius)
 
-    def _draw_target_x(self,width=3):
+    def _draw_target_x(self, width=3):
         # Convert grid positions to pixel positions for drawing
         target_pos = (self.dim / 2) * self.cell_size
 
         color = RED
-        pygame.draw.line(self.screen, color, (target_pos, target_pos + self.cell_size), (target_pos + self.cell_size, target_pos),width=width)
-        pygame.draw.line(self.screen, color, (target_pos, target_pos), (target_pos + self.cell_size, target_pos + self.cell_size,),width=width)
+        pygame.draw.line(
+            self.screen,
+            color,
+            (target_pos, target_pos + self.cell_size),
+            (target_pos + self.cell_size, target_pos),
+            width=width,
+        )
+        pygame.draw.line(
+            self.screen,
+            color,
+            (target_pos, target_pos),
+            (
+                target_pos + self.cell_size,
+                target_pos + self.cell_size,
+            ),
+            width=width,
+        )
 
     def _draw_global_arrangement_vector(self, global_arrangement_vector):
         # Draw the global arrangement vector which shows the distance of the agents centroid to the target
@@ -186,7 +286,7 @@ class Graph:
         self.clock.tick(FPS)
 
     def reset_graphs(self):
-        if self.full_communication:
+        if not self.dynamic_comms:
             all_agents = [agent for agent in self.agents]
             self.comm = {agent: all_agents for agent in self.agents}
         else:

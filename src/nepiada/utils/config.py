@@ -4,6 +4,7 @@
 from utils.noise import GaussianNoise
 from .anim_consts import WIDTH, HEIGHT
 
+
 class Config:
     """
     We allow our environment to be customizable based on the user's requirements.
@@ -20,7 +21,10 @@ class Config:
 
     dynamic_obs: Set to true if you wish to update observation graph based on agent's current position
     obs_radius: The only supported form of dynamic observation is including proximal agents that fall within the observation radius
-    communication_all: If set to True all agents should be able to communicate with all other agents
+
+    dynamic_comms: If set to true, the communication graph is updated based on the agent's current position and the dynamic comms radius. If set to false, the communication graph is static and all agents can communicate with all other agents.
+    dynamic_comms_radius: If dynamic_comms is set to true, the communication graph is updated based on the radius set here
+    dynamic_comms_enforce_minimum: If dynamic_comms is set to true, the communication graph ensures that each agent has at least this many neighbours
 
     possible_moves: The valid actions for each agent
     """
@@ -40,7 +44,9 @@ class Config:
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 10
-    full_communication: bool = True
+    dynamic_comms: bool = True
+    dynamic_comms_radius: int = 15
+    dynamic_comms_enforce_minimum: int = 1
     noise = GaussianNoise()
 
     # Agent update parameters
@@ -55,35 +61,37 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
-    #screen_height: int = 400 
-    #screen_width: int = 400 
+    # screen_height: int = 400
+    # screen_width: int = 400
 
     def __init__(self):
         self._process_screen_size()
-        
-    def _process_screen_size(self): 
-        height = getattr(self,"screen_height",None) 
-        width = getattr(self,"screen_width",None)
-            
-        if width and height: 
-            return 
-        
-        if not height: 
+
+    def _process_screen_size(self):
+        height = getattr(self, "screen_height", None)
+        width = getattr(self, "screen_width", None)
+
+        if width and height:
+            return
+
+        if not height:
             height = HEIGHT * (max(self.size // 30, 0) + 1)
             self.screen_height = height
 
-        if not width: 
+        if not width:
             width = WIDTH * (max(self.size // 30, 0) + 1)
             self.screen_width = width
-        
-        return 
-    
+
+        return
+
+
 # Baseline specific configuration parameters
 class BaselineConfig(Config):
     D: int = 1
 
     def __init__(self):
         super().__init__()
+
 
 # Baseline specific configuration parameters
 class EpsilonBaselineConfig(Config):

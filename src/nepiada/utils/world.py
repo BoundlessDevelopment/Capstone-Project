@@ -44,6 +44,8 @@ class World:
         self.target_x = config.size / 2
         self.target_y = config.size / 2
 
+        print("World INFO: Simulation World has been initialized")
+
     def _init_pygame(self,width=WIDTH,height=HEIGHT):
         # Initialize Pygame
         pygame.init()

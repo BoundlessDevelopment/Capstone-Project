@@ -92,6 +92,7 @@ def strip_extreme_values_and_update_beliefs(
         if (
             current_agent not in incoming_messages
             or incoming_messages[current_agent] is None
+            or len(incoming_messages[current_agent].items()) == 0
         ):
           
             # No incoming messages about this agent, keep previous state
