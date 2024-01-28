@@ -193,20 +193,17 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     return min_action
 
 import json
-
+from utils.config import BaselineConfig
 
 def main(included_data=None, config_file=None):
     if included_data is None:
         included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
     if config_file:
-        # Dynamically import BaselineConfig from the given module path
-        from importlib import import_module
-        BaselineConfig = import_module(config_file).BaselineConfig
+        env_config = BaselineConfig(json_path=config_file)
     else:
-        # Import BaselineConfig from the default utils.config
-        from utils.config import BaselineConfig
-    env_config = BaselineConfig()
+        env_config = BaselineConfig()
+   
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
