@@ -14,8 +14,9 @@ import pygame
 
 import copy
 from collections import defaultdict
-import os 
-import matplotlib.pyplot as plt 
+import os
+import matplotlib.pyplot as plt
+
 
 def parallel_env(config: Config):
     """
@@ -117,7 +118,7 @@ class nepiada(ParallelEnv):
         user is no longer using the environment.
         """
         pygame.quit()
-        # Before quiting write out the graphs for each trajectory 
+        # Before quiting write out the graphs for each trajectory
         self._dump_pos_graphs()
         pass
 
@@ -157,7 +158,7 @@ class nepiada(ParallelEnv):
 
                 if not observation[target_agent_name]:
                     # Must estimate where the agent is via communication
-                    
+
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
@@ -192,41 +193,41 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
-    def _update_agents_pos(self): 
-        for agent in self.agents: 
+    def _update_agents_pos(self):
+        for agent in self.agents:
             latest_pos = self.world.get_agent(agent_name=agent).p_pos
-            self.agents_pos[agent]['p_pos'].append(latest_pos) 
-            self.agents_pos[agent]['target_dist'].append(self.world.get_target_distance(latest_pos))
+            self.agents_pos[agent]["p_pos"].append(latest_pos)
+            self.agents_pos[agent]["target_dist"].append(
+                self.world.get_target_distance(latest_pos)
+            )
 
-    def _dump_pos_graphs(self): 
-        for agent_name,p_pos_dict in self.agents_pos.items(): 
-
-            all_pos = p_pos_dict['target_dist']
-            #all_dists = p_pos_dict['target_dist']
+    def _dump_pos_graphs(self):
+        for agent_name, p_pos_dict in self.agents_pos.items():
+            all_pos = p_pos_dict["target_dist"]
+            # all_dists = p_pos_dict['target_dist']
             plt.figure(figsize=(10, 6))  # You can adjust the figure size
-            plt.plot(all_pos, label=f'Distance of {agent_name}',marker='o')
-            plt.xlabel('Steps')
-            plt.ylabel('Distance to Target')
-            plt.title(f'Distance Trajectory of {agent_name}')
+            plt.plot(all_pos, label=f"Distance of {agent_name}", marker="o")
+            plt.xlabel("Steps")
+            plt.ylabel("Distance to Target")
+            plt.title(f"Distance Trajectory of {agent_name}")
             plt.legend()
             plt.grid(True)  # Adds a grid for better readability
-            plt.savefig(f'{self.config.simulation_dir}/{agent_name}_traj.png')
+            plt.savefig(f"{self.config.simulation_dir}/{agent_name}_traj.png")
             plt.close()  # Close the plot to free up memory
 
         plt.figure(figsize=(10, 6))  # You can adjust the figure size
 
-        for agent_name,p_pos_dict in self.agents_pos.items(): 
-
-            all_pos = p_pos_dict['target_dist']
-            #all_dists = p_pos_dict['target_dist']
-            plt.plot(all_pos, label=f'Distance of {agent_name}',marker='x')
+        for agent_name, p_pos_dict in self.agents_pos.items():
+            all_pos = p_pos_dict["target_dist"]
+            # all_dists = p_pos_dict['target_dist']
+            plt.plot(all_pos, label=f"Distance of {agent_name}", marker="x")
             plt.grid(True)  # Adds a grid for better readability
-        
-        plt.xlabel('Steps')
-        plt.ylabel('Distance to Target')
-        plt.title(f'Evolution of Agent Distances to Target')
+
+        plt.xlabel("Steps")
+        plt.ylabel("Distance to Target")
+        plt.title(f"Evolution of Agent Distances to Target")
         plt.legend()
-        plt.savefig(f'{self.config.simulation_dir}/all_traj.png')
+        plt.savefig(f"{self.config.simulation_dir}/all_traj.png")
         plt.close()  # Close the plot to free up memory
 
     def reset(self, seed=None, options=None):
@@ -315,8 +316,6 @@ class nepiada(ParallelEnv):
         truncations = {agent: env_truncation for agent in self.agents}
 
         # Update the observation and communication graphs at each iteration
-        # Note: Currently only the observation graph will be updated as it uses a dynamic observation radius concept
-        #       The communication graph remains static as per the environment specifications
         self.world.update_graphs()
 
         self.observations = self.get_observations()
@@ -381,10 +380,16 @@ class nepiada(ParallelEnv):
 
         for agent_name in self.agents:
             agent = self.world.agents[agent_name]
-            global_arrangement_vector += np.array([(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])])
+            global_arrangement_vector += np.array(
+                [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+            )
 
-        global_arrangement_vector = np.divide(global_arrangement_vector, len(self.agents))
-        global_arrangement_reward = np.sqrt(global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2)
+        global_arrangement_vector = np.divide(
+            global_arrangement_vector, len(self.agents)
+        )
+        global_arrangement_reward = np.sqrt(
+            global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2
+        )
 
         # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
         self.world.graph.global_arrangement_vector = global_arrangement_vector
