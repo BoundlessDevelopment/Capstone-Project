@@ -14,7 +14,7 @@ import pygame
 
 import copy
 import string
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 import os
 import matplotlib.pyplot as plt
 
@@ -77,20 +77,23 @@ class nepiada(ParallelEnv):
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
-        """
-        This is the way the observations are structured for RLib. Eventually all the values are flattened internally.
-        Note that the order in which the observation is flattened is alphabetically in order of the key values.
-        """
+        ## THANOS EXPERIMENTAL ##
         return Dict(
             {
-                "beliefs": Box(
-                    low=0,
-                    high=self.config.size + 1,
-                    shape=(self.total_agents, 2),
-                    dtype=np.float32,
+                "position": Box(
+                    low=0, high=self.config.size, shape=(2,), dtype=np.float32
                 ),
-                "agent_position": Box(
-                    low=0, high=self.config.size + 1, shape=(2,), dtype=np.float32
+                "target_neighbours": Sequence(
+                    Tuple(
+                        Text(min_length=1, max_length=4, charset=string.digits),
+                        Box(low=-1, high=1, shape=(2,), dtype=np.float32),
+                    )
+                ),
+                "true_obs": Sequence(
+                    Tuple(
+                        Text(min_length=1, max_length=4, charset=string.digits),
+                        Box(low=0, high=self.config.size, shape=(2,), dtype=np.float32),
+                    )
                 ),
             }
         )
@@ -435,15 +438,9 @@ class nepiada(ParallelEnv):
         # Infos is used to pass aditional information
         self.infos = {agent: {} for agent in self.agents}
 
-        # Initialize the infos with the agent instances, so the algorithm can access agent beliefs.
-        if (self.config.pass_agents_in_infos):
-            self.initialize_infos_with_agents()
-
-        # For incomming messages
-        self.incoming_msgs = {agent: {} for agent in self.agents}
-
-        # Set all beliefs to random values
-        self.initialize_beliefs()
+        # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
+        ## THANOS EXPERIMENTAL
+        # self.initialize_infos_with_agents()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
         self.observations = self.get_observations(self.incoming_msgs)
@@ -506,8 +503,19 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents: 
             self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
 
-        # if self.render_mode == "human":
-        #     self.render()
+        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
+        self.infos = {agent_name: {} for agent_name in self.agents}
+        for agent_name in self.agents:
+            ## THANOS EXPERIMENTAL - This WILL break the baselines
+            # self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
+            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
+                agent_name
+            ]
+            # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
+            # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
+
+        if self.render_mode == "human":
+            self.render()
 
         # Update the agent beliefs
         self.observations = self.get_observations(self.incoming_msgs)
