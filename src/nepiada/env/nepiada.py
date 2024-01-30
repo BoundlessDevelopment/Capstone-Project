@@ -82,12 +82,6 @@ class nepiada(ParallelEnv):
                 "position": Box(
                     low=0, high=self.config.size, shape=(2,), dtype=np.float32
                 ),
-                "target_neighbours": Sequence(
-                    Tuple(
-                        Text(min_length=1, max_length=4, charset=string.digits),
-                        Box(low=-1, high=1, shape=(2,), dtype=np.float32),
-                    )
-                ),
                 "true_obs": Sequence(
                     Tuple(
                         Text(min_length=1, max_length=4, charset=string.digits),
