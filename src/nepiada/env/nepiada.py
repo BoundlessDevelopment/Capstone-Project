@@ -136,7 +136,40 @@ class nepiada(ParallelEnv):
         self._dump_pos_graphs()
         pass
 
+    ## THANOS EXPERIMENTAL
     def get_observations(self):
+        """
+        Experimental // Experimental
+        """
+        observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            observation = {}
+
+            # Get the agent
+            curr_agent = self.world.get_agent(agent_name)
+            # Write position of the agent in np array format
+            observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+
+            # True positions in np array format
+            true_pos = []
+            for observed_agent_name in self.agents:
+                observed_agent = self.world.get_agent(observed_agent_name)
+                if observed_agent_name in self.world.graph.obs[agent_name]:
+                    true_pos.append(
+                        (
+                            observed_agent_name,
+                            np.array(observed_agent.p_pos, dtype=np.float32),
+                        )
+                    )
+            observation["true_obs"] = true_pos
+
+            # Can add target neighbours here if desired.
+
+            observations[agent_name] = observation
+        return observations
+
+    ## THANOS EXPERIMENTAL
+    def get_observations_old(self):
         """
         The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
         observations[i][j] is the location that drone i sees drone j at
