@@ -23,8 +23,8 @@ class World:
 
         # Set each agent's adjacent target neighbours
         self.__initialize_target_neighbours(self.num_agents, config)
-        self.screen = self._init_pygame(config.screen_height,config.screen_width)
-        
+        self.screen = self._init_pygame(config.screen_height, config.screen_width)
+
         # Initialize the Grid
         self.grid = Grid(config)
         self.grid.save_agent_types(self.agents)
@@ -46,7 +46,7 @@ class World:
 
         print("World INFO: Simulation World has been initialized")
 
-    def _init_pygame(self,width=WIDTH,height=HEIGHT):
+    def _init_pygame(self, width=WIDTH, height=HEIGHT):
         # Initialize Pygame
         pygame.init()
 
@@ -75,11 +75,12 @@ class World:
         for i in range(num_agents):
             # Initialize the agent
             agent_name = ""
+            ## THANOS EXPERIMENTAL - Names change
             if i < config.num_adversarial_agents:
-                agent_name = "adversarial_" + str(i)
+                agent_name = str(i)
                 agents[agent_name] = Agent(AgentType.ADVERSARIAL)
             else:
-                agent_name = "truthful_" + str(i)
+                agent_name = str(i)
                 agents[agent_name] = Agent(AgentType.TRUTHFUL)
 
             # Map the uid to agent name for later use
@@ -138,13 +139,14 @@ class World:
 
     def get_agent(self, agent_name):
         return self.agents[agent_name]
-    
-    def get_target_distance(self,p_pos): 
-        try: 
-            return ((self.target_x - p_pos[0]) ** 2 + (self.target_y - p_pos[1]) ** 2) ** 0.5 
-        except: 
+
+    def get_target_distance(self, p_pos):
+        try:
+            return (
+                (self.target_x - p_pos[0]) ** 2 + (self.target_y - p_pos[1]) ** 2
+            ) ** 0.5
+        except:
             breakpoint()
-    
 
     # return all entities in the world
     @property

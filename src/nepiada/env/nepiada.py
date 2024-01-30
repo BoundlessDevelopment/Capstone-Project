@@ -2,7 +2,7 @@ import functools
 import numpy as np
 
 import gymnasium
-from gymnasium.spaces import Discrete, Box
+from gymnasium.spaces import Discrete, Box, Dict, Sequence, Text, Tuple
 
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
@@ -13,6 +13,7 @@ from utils.agent import AgentType
 import pygame
 
 import copy
+import string
 from collections import defaultdict
 import os
 import matplotlib.pyplot as plt
@@ -75,12 +76,25 @@ class nepiada(ParallelEnv):
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
-        # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-
-        # Observation space is defined as a N x 2 matrix, where each row corresponds to an agents coordinates.
-        # The first column stores the x coordinate and the second column stores the y coordinate
-        return Box(
-            low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.int_
+        ## THANOS EXPERIMENTAL ##
+        return Dict(
+            {
+                "position": Box(
+                    low=0, high=self.config.size, shape=(2,), dtype=np.float32
+                ),
+                "target_neighbours": Sequence(
+                    Tuple(
+                        Text(min_length=1, max_length=4, charset=string.digits),
+                        Box(low=-1, high=1, shape=(2,), dtype=np.float32),
+                    )
+                ),
+                "true_obs": Sequence(
+                    Tuple(
+                        Text(min_length=1, max_length=4, charset=string.digits),
+                        Box(low=0, high=self.config.size, shape=(2,), dtype=np.float32),
+                    )
+                ),
+            }
         )
 
     # Action space should be defined here.
@@ -264,7 +278,8 @@ class nepiada(ParallelEnv):
         self.infos = {agent: {} for agent in self.agents}
 
         # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
-        self.initialize_infos_with_agents()
+        ## THANOS EXPERIMENTAL
+        # self.initialize_infos_with_agents()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
         self.observations = self.get_observations()
@@ -326,12 +341,13 @@ class nepiada(ParallelEnv):
         # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent_name: {} for agent_name in self.agents}
         for agent_name in self.agents:
-            self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
+            ## THANOS EXPERIMENTAL - This WILL break the baselines
+            # self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
             self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
                 agent_name
             ]
-            self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
-            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
+            # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
+            # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
         if self.render_mode == "human":
             self.render()
