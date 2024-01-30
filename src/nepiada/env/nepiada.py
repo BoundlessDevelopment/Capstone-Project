@@ -108,7 +108,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            self.world.graph.render_graph(type="obs")
+            #self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
