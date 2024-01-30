@@ -137,16 +137,43 @@ class nepiada(ParallelEnv):
         self._dump_pos_graphs()
         pass
 
-    def strip_extreme_values_and_update_beliefs(
-        self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
-    ):
+    ## THANOS EXPERIMENTAL
+    def get_observations(self):
         """
-        This function strips the extreme values from the incoming messages according
-        to the D value. It strips the D greater values compared to it's current beliefs,
-        as well as the D lesser values compared to it's current beliefs and updates the beliefs
-        with the average of the remaining communication messages. If no communication messages
-        are left for the remaining agents, the agent's new belief of the target's agents position
-        remains unchanged.
+        Experimental // Experimental
+        """
+        observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            observation = {}
+
+            # Get the agent
+            curr_agent = self.world.get_agent(agent_name)
+            # Write position of the agent in np array format
+            observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+
+            # True positions in np array format
+            true_pos = []
+            for observed_agent_name in self.agents:
+                observed_agent = self.world.get_agent(observed_agent_name)
+                if observed_agent_name in self.world.graph.obs[agent_name]:
+                    true_pos.append(
+                        (
+                            observed_agent_name,
+                            np.array(observed_agent.p_pos, dtype=np.float32),
+                        )
+                    )
+            observation["true_obs"] = true_pos
+
+            # Can add target neighbours here if desired.
+
+            observations[agent_name] = observation
+        return observations
+
+    ## THANOS EXPERIMENTAL
+    def get_observations_old(self):
+        """
+        The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
+        observations[i][j] is the location that drone i sees drone j at
         """
         D_value = self.config.D
 
