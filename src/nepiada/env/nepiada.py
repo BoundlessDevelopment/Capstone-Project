@@ -14,7 +14,7 @@ import pygame
 
 import copy
 import string
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 import os
 import matplotlib.pyplot as plt
 
@@ -83,9 +83,10 @@ class nepiada(ParallelEnv):
                     low=0, high=self.config.size, shape=(2,), dtype=np.float32
                 ),
                 "true_obs": Sequence(
-                    Tuple(
+                    Tuple((
                         Text(min_length=1, max_length=4, charset=string.digits),
                         Box(low=0, high=self.config.size, shape=(2,), dtype=np.float32),
+                    )
                     )
                 ),
             }
@@ -136,9 +137,11 @@ class nepiada(ParallelEnv):
         Experimental // Experimental
         """
         observations = {agent: None for agent in self.agents}
+        self.internal_obs = {agent: None for agent in self.agents}
         for agent_name in self.agents:
-            observation = {}
-
+            observation = OrderedDict()
+            # temp to preserve comms functionality without updates
+            internal_ob = {}
             # Get the agent
             curr_agent = self.world.get_agent(agent_name)
             # Write position of the agent in np array format
@@ -155,7 +158,11 @@ class nepiada(ParallelEnv):
                             np.array(observed_agent.p_pos, dtype=np.float32),
                         )
                     )
-            observation["true_obs"] = true_pos
+                    internal_ob[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
+                else:
+                    internal_ob[observed_agent_name] = None # temp to preserve comms functionality without updates
+            self.internal_obs[agent_name] = internal_ob
+            observation["true_obs"] = tuple(true_pos)
 
             # Can add target neighbours here if desired.
 
@@ -190,7 +197,7 @@ class nepiada(ParallelEnv):
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
-            observation = self.observations[agent_name]
+            observation = self.internal_obs[agent_name]
 
             incoming_agent_messages = {}
 
