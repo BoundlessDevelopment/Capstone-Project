@@ -1,6 +1,6 @@
 import ray
 import supersuit as ss
-from ray import tune
+from ray import tune, air
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
@@ -24,5 +24,12 @@ if __name__ == "__main__":
     config = config.resources(num_gpus=0)
     config = config.rollouts(num_rollout_workers=1)
 
-    algo = config.build(env="nepiada")
-    algo.train()
+    # algo = config.build(env="nepiada")
+    # algo.train()
+
+    # config = config.environment(env="nepiada")
+    # tune.Tuner(
+    #     "PPO",
+    #     run_config=air.RunConfig(stop={"training_iteration": 20}),
+    #     param_space=config.to_dict(),
+    # ).fit()
