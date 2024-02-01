@@ -83,13 +83,9 @@ class nepiada(ParallelEnv):
                 "position": Box(
                     low=0, high=self.config.size, shape=(2,), dtype=np.float32
                 ),
-                "true_obs": Sequence(
-                    Tuple((
-                        Text(min_length=1, max_length=4, charset=string.digits),
-                        Box(low=0, high=self.config.size, shape=(2,), dtype=np.float32),
-                    )
-                    )
-                ),
+                "true_obs": Box(
+                    low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.float32
+                )
             }
         )
 
@@ -154,16 +150,14 @@ class nepiada(ParallelEnv):
                 observed_agent = self.world.get_agent(observed_agent_name)
                 if observed_agent_name in self.world.graph.obs[agent_name]:
                     true_pos.append(
-                        (
-                            observed_agent_name,
-                            np.array(observed_agent.p_pos, dtype=np.float32),
-                        )
+                            observed_agent.p_pos
                     )
                     internal_ob[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
                 else:
                     internal_ob[observed_agent_name] = None # temp to preserve comms functionality without updates
+                    true_pos.append([0, 0])
             self.internal_obs[agent_name] = internal_ob
-            observation["true_obs"] = tuple(true_pos)
+            observation["true_obs"] = np.array(true_pos, dtype=np.float32)
 
             # Can add target neighbours here if desired.
 
