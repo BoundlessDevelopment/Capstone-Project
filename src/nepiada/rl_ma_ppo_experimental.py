@@ -1,6 +1,6 @@
 import ray
 import supersuit as ss
-from ray import tune, air
+from ray import tune, air, train
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     #     "PPO",
     #     run_config=air.RunConfig(
     #         stop={"training_iteration": 100},
-    #         checkpoint_config=air.CheckpointConfig(checkpoint_frequency=10),
+    #         checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
     #     ),
     #     param_space=config.to_dict(),
     # ).fit()
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # tune.run(
     #     "PPO",
     #     name="PPO",
-    #     stop={"timesteps_total": 5000},
+    #     stop={"timesteps_total": 50000},
     #     checkpoint_freq=10,
     #     config=config.to_dict(),
     # )
