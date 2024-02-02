@@ -248,9 +248,7 @@ class nepiada(ParallelEnv):
 
     def _reset_agent_pos(self):
         for agent_name in self.agents:
-            self.world.get_agent(agent_name).p_pos = self.world.get_agent(
-                agent_name
-            ).starting_p_pos
+            self.world.get_agent(agent_name).p_pos = np.random.randint(low=0, high=Config.size, size=2)
 
     def initialize_infos_with_agents(self):
         for agent_name in self.agents:

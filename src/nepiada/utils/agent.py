@@ -29,8 +29,7 @@ class Agent(Entity):  # properties of agent entities
         super().__init__()
 
         # Randomize the position of the agent, p_pos is stored as [x_coor, y_coor] of the agent
-        self.starting_p_pos = np.random.randint(low=0, high=Config.size, size=2)
-        self.p_pos = self.starting_p_pos
+        self.p_pos = np.random.randint(low=0, high=Config.size, size=2)
 
         # agents type is not defined by default
         self.type = type
