@@ -1,44 +1,26 @@
 import ray
-from ray.rllib.evaluation import RolloutWorker
-from ray.rllib.policy.sample_batch import SampleBatch
 import supersuit as ss
 from ray import tune, air, train
 from ray.rllib.algorithms.dqn.dqn import DQNConfig
-from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.algorithms import Algorithm
-from ray.rllib.algorithms.dqn.dqn import DQN
+from ray.rllib.algorithms.dqn import DQN
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
 
 import env.nepiada as nepiada
 from utils.config import Config
 
-class NepiadaCallbacks(DefaultCallbacks):
-    def __init__(self):
-        super().__init__()
-    
-    def on_sample_end(self, *, worker: RolloutWorker, samples: SampleBatch, **kwargs) -> None:
-        # Get current epsilon for all agents
-        agent_epsilons = ""
-        for curr_agent_name in worker.env.get_agent_ids():
-            curr_epsilon = worker.policy_map[curr_agent_name].get_exploration_state()["cur_epsilon"]
-            curr_timestep = worker.policy_map[curr_agent_name].get_exploration_state()["last_timestep"]
-            agent_epsilons += f"{curr_agent_name}: {str(curr_epsilon)} | {str(curr_timestep)} || "
-
-        print(f"DQN Rollout | Epsilons: {agent_epsilons}")
 
 def env_creator(args):
     nepiada_config = Config()
     env = nepiada.parallel_env(config=nepiada_config)
     # env = ss.dtype_v0(env, "float32")
-    return ParallelPettingZooEnv(env)
+    return env
 
 
 if __name__ == "__main__":
     ray.init()
 
-    env = env_creator({})
-    register_env("nepiada", env_creator)
+    register_env("nepiada", lambda config: ParallelPettingZooEnv(env_creator(config)))
 
     config = DQNConfig()
 
@@ -50,48 +32,14 @@ if __name__ == "__main__":
             "prioritized_replay_eps": 3e-6,
         }
 
-    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.99)
+    config = config.training(replay_buffer_config=replay_config, num_atoms=tune.grid_search([1,]))
     config = config.resources(num_gpus=1)
-    config = config.rollouts(num_rollout_workers=11, compress_observations=True)
+    config = config.rollouts(num_rollout_workers=1)
     config = config.environment("nepiada")
-    config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 100000})
-  #  config = config.callbacks(NepiadaCallbacks)
-
-    ### TRAINING ####
-    agents_env = env.get_agent_ids()
-    algo = DQN(config=config)
-    best_reward_mean = -1000
-    for i in range(10000):
-        result = algo.train()
-        print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
-        if result["episode_reward_mean"] > best_reward_mean:
-            print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
-            best_reward_mean = result["episode_reward_mean"]
-            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Feb15_2/" + str(i) + "_" + str(result["episode_reward_mean"]))
-            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
-
-    # stop = {"episodes_total": 60000}
+    # algo = DQN(config=config)
+    # algo.train()
     # tune.Tuner(
     #     "DQN",
-    #     run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
-    #     param_space=config
+    #     run_config=air.RunConfig(stop={"training_iteration":150}),
+    #     param_space=config.to_dict()
     # ).fit()
-
-    # test_config = DQNConfig()
-    # test_config = test_config.rollouts(num_rollout_workers=0)
-    # test_config = test_config.environment("nepiada")
-    # test_config = test_config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-
-    # algo = DQN(config=test_config)
-    # algo.restore("C:/Users/thano/ray_results/DQN_2024-02-02_14-29-18/DQN_nepiada_5c7b1_00000_0_num_atoms=1_2024-02-02_14-29-19/checkpoint_000005")
-    # env.reset()
-    # observations, infos = env.reset()
-    # while True:
-    #     actions = {}
-    #     for curr_agent_name in env.get_agent_ids():
-    #         actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
-    #     print(actions)
-    #     observations, rewards, terminations, truncations, infos = env.step(actions)
-    # env.close()
-    
