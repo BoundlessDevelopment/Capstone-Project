@@ -83,8 +83,11 @@ class nepiada(ParallelEnv):
                     low=0, high=self.config.size, shape=(2,), dtype=np.float32
                 ),
                 "true_obs": Box(
-                    low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.float32
-                )
+                    low=0,
+                    high=self.config.size,
+                    shape=(self.total_agents, 2),
+                    dtype=np.float32,
+                ),
             }
         )
 
@@ -105,7 +108,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            #self.world.graph.render_graph(type="obs")
+            # self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -148,41 +151,45 @@ class nepiada(ParallelEnv):
             for observed_agent_name in self.agents:
                 observed_agent = self.world.get_agent(observed_agent_name)
                 if observed_agent_name in self.world.graph.obs[agent_name]:
-                    true_pos.append(
-                            observed_agent.p_pos
+                    true_pos.append(observed_agent.p_pos)
+                    internal_ob[observed_agent_name] = (
+                        observed_agent.p_pos[0],
+                        observed_agent.p_pos[1],
                     )
-                    internal_ob[observed_agent_name] = (observed_agent.p_pos[0], observed_agent.p_pos[1])
                 else:
-                    internal_ob[observed_agent_name] = None # temp to preserve comms functionality without updates
-                    true_pos.append([0, 0])
+                    internal_ob[
+                        observed_agent_name
+                    ] = None  # temp to preserve comms functionality without updates
+
+                    # THANOS EXPERIMENTAL - Enable full obs for RL sanity-checking
+                    true_pos.append(observed_agent.p_pos)
             self.internal_obs[agent_name] = internal_ob
             observation["true_obs"] = np.array(true_pos, dtype=np.float32)
-
             # Can add target neighbours here if desired.
 
             observations[agent_name] = observation
         return observations
 
     ## THANOS EXPERIMENTAL
-    def get_observations_old(self):
-        """
-        The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
-        observations[i][j] is the location that drone i sees drone j at
-        """
-        observations = {agent: None for agent in self.agents}
-        for agent_name in self.agents:
-            observation = {}
-            for observed_agent_name in self.agents:
-                observed_agent = self.world.get_agent(observed_agent_name)
-                if observed_agent_name in self.world.graph.obs[agent_name]:
-                    observation[observed_agent_name] = (
-                        observed_agent.p_pos[0],
-                        observed_agent.p_pos[1],
-                    )
-                else:
-                    observation[observed_agent_name] = None  # Cannot be observed
-            observations[agent_name] = observation
-        return observations
+    # def get_observations_old(self):
+    #     """
+    #     The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
+    #     observations[i][j] is the location that drone i sees drone j at
+    #     """
+    #     observations = {agent: None for agent in self.agents}
+    #     for agent_name in self.agents:
+    #         observation = {}
+    #         for observed_agent_name in self.agents:
+    #             observed_agent = self.world.get_agent(observed_agent_name)
+    #             if observed_agent_name in self.world.graph.obs[agent_name]:
+    #                 observation[observed_agent_name] = (
+    #                     observed_agent.p_pos[0],
+    #                     observed_agent.p_pos[1],
+    #                 )
+    #             else:
+    #                 observation[observed_agent_name] = None  # Cannot be observed
+    #         observations[agent_name] = observation
+    #     return observations
 
     def get_all_messages(self):
         """
@@ -230,6 +237,12 @@ class nepiada(ParallelEnv):
             beliefs = self.world.get_agent(agent_name).beliefs
             for target_agent_name in self.agents:
                 beliefs[target_agent_name] = None
+
+    def _reset_agent_pos(self):
+        for agent_name in self.agents:
+            self.world.get_agent(agent_name).p_pos = self.world.get_agent(
+                agent_name
+            ).starting_p_pos
 
     def initialize_infos_with_agents(self):
         for agent_name in self.agents:
@@ -290,8 +303,11 @@ class nepiada(ParallelEnv):
 
         self.num_moves = 0
 
+        self._reset_agent_pos()
+
         # Reinitialize the grid
         self.world.grid.reset_grid()
+        self.world.grid.update_grid(self.world.agents)
 
         # Reset the comm and observation graphs
         self.world.graph.reset_graphs()
@@ -364,21 +380,21 @@ class nepiada(ParallelEnv):
         self.observations = self.get_observations()
 
         # Second pass communicated beliefs
-        incoming_all_messages = self.get_all_messages()
+        # incoming_all_messages = self.get_all_messages()
 
         # Info will be used to pass information about comm graphs, beliefs, and incoming messages
         self.infos = {agent_name: {} for agent_name in self.agents}
-        for agent_name in self.agents:
-            ## THANOS EXPERIMENTAL - This WILL break the baselines
-            # self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
-            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
-                agent_name
-            ]
-            # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
-            # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
+        # for agent_name in self.agents:
+        ## THANOS EXPERIMENTAL - This WILL break the baselines
+        # self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
+        # self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
+        #     agent_name
+        # ]
+        # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
+        # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         return self.observations, self.rewards, terminations, truncations, self.infos
 
