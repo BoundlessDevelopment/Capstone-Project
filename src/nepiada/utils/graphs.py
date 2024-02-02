@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pygame
 from .anim_consts import *
+from utils.agent import AgentType
 
 
 class Graph:
@@ -170,7 +171,7 @@ class Graph:
                 int(agent.p_pos[0] * self.cell_size + self.cell_size // 2),
                 int(agent.p_pos[1] * self.cell_size + self.cell_size // 2),
             )
-            color = BLUE if "truthful" in agent_name else RED
+            color = BLUE if agent.type == AgentType.TRUTHFUL else RED
             circle_radius = self.cell_size // radius
 
             # Create a new surface with an alpha channel for transparency
