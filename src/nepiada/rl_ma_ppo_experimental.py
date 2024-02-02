@@ -8,11 +8,13 @@ from ray.tune.registry import register_env
 import env.nepiada as nepiada
 from utils.config import Config
 
+
 def env_creator(args):
     nepiada_config = Config()
     env = nepiada.parallel_env(config=nepiada_config)
-   # env = ss.dtype_v0(env, "float32")
+    # env = ss.dtype_v0(env, "float32")
     return env
+
 
 if __name__ == "__main__":
     ray.init()
@@ -28,8 +30,20 @@ if __name__ == "__main__":
     # algo.train()
 
     # config = config.environment(env="nepiada")
+
     # tune.Tuner(
     #     "PPO",
-    #     run_config=air.RunConfig(stop={"training_iteration": 20}),
+    #     run_config=air.RunConfig(
+    #         stop={"training_iteration": 100},
+    #         checkpoint_config=air.CheckpointConfig(checkpoint_frequency=10),
+    #     ),
     #     param_space=config.to_dict(),
     # ).fit()
+
+    # tune.run(
+    #     "PPO",
+    #     name="PPO",
+    #     stop={"timesteps_total": 5000},
+    #     checkpoint_freq=10,
+    #     config=config.to_dict(),
+    # )

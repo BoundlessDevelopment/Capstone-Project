@@ -33,7 +33,6 @@ class Grid:
             self.state[x_coord][y_coord].add(agent.uid)
 
     def reset_grid(self):
-        self.state = defaultdict(lambda: defaultdict(set))
         for x in range(self.dim):
             for y in range(self.dim):
                 self.state[x][y].add(self.config.empty_cell)
