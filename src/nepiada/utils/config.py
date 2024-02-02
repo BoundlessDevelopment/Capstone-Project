@@ -32,7 +32,7 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-    iterations: int = 50
+    iterations: int = 200
     simulation_dir: str = "plots"
     pass_agents_in_infos: bool = False
 
