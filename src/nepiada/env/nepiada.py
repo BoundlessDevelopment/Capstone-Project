@@ -109,9 +109,9 @@ class nepiada(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
-        elif self.render_mode == "human":
-            # self.world.graph.render_graph(type="obs")
-            return
+        # elif self.render_mode == "human":
+        #     self.world.graph.render_graph(type="obs")
+        #     return
 
     def observe(self, agent_name):
         """
@@ -392,8 +392,8 @@ class nepiada(ParallelEnv):
         # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
         # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
-        # if self.render_mode == "human":
-        #     self.render()
+        if self.render_mode == "human":
+            self.render()
 
         return self.observations, self.rewards, terminations, truncations, self.infos
 
