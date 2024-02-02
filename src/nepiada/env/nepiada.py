@@ -108,9 +108,9 @@ class nepiada(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
-        # elif self.render_mode == "human":
-        #     self.world.graph.render_graph(type="obs")
-        #     return
+        elif self.render_mode == "human":
+           # self.world.graph.render_graph(type="obs")
+            return
 
     def observe(self, agent_name):
         """
@@ -310,6 +310,7 @@ class nepiada(ParallelEnv):
 
         self._reset_agent_pos()
 
+        ## THANOS EXPERIMENTAL - RESET CHANGES
         # Reinitialize the grid
         self.world.grid.reset_grid()
         self.world.grid.update_grid(self.world.agents)
@@ -332,7 +333,6 @@ class nepiada(ParallelEnv):
         self.infos = {agent: {} for agent in self.agents}
 
         # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
-        ## THANOS EXPERIMENTAL
         # self.initialize_infos_with_agents()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
@@ -407,8 +407,8 @@ class nepiada(ParallelEnv):
         # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
         # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         # Update the agent beliefs
         self.observations = self.get_observations(self.incoming_msgs)
@@ -439,6 +439,80 @@ class nepiada(ParallelEnv):
 
     ## THANOS EXPERIMENTAL
     def get_rewards(self):
+        rewards = {}
+        curr_scores = self._compute_scores()
+
+        for agent_name in self.agents:
+            rewards[agent_name] = curr_scores[agent_name] - self.world.agents[agent_name].prev_score
+
+        self._store_scores_in_agent(curr_scores)
+
+        return rewards
+
+    def _compute_scores(self):
+        """
+        Compute the scores of the agents based on their distance from the target
+        """
+        scores = {}
+    
+        target_x = self.config.size / 2
+        target_y = self.config.size / 2
+        global_arrangement_vector = np.array([0.0, 0.0])
+
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            global_arrangement_vector += np.array(
+                [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+            )
+
+        global_arrangement_vector = np.divide(
+            global_arrangement_vector, len(self.agents)
+        )
+        global_arrangement_reward = np.sqrt(
+            global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2
+        )
+
+        # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
+        self.world.graph.global_arrangement_vector = global_arrangement_vector
+
+        # Add each agents reward based on their target neighbours
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            agent_x = agent.p_pos[0]
+            agent_y = agent.p_pos[1]
+            deviation_from_arrangement = 0
+            for neighbour_name, ideal_distance in agent.target_neighbour.items():
+                neighbour = self.world.agents[neighbour_name]
+                neighbour_x = neighbour.p_pos[0]
+                neighbour_y = neighbour.p_pos[1]
+                ideal_x = ideal_distance[0]
+                ideal_y = ideal_distance[1]
+
+                deviation_from_arrangement += np.sqrt(
+                    (neighbour_x - agent_x - ideal_x) ** 2
+                    + (neighbour_y - agent_y - ideal_y) ** 2
+                )
+
+            scores[agent_name] = -((self.config.global_reward_weight * global_arrangement_reward) + (self.config.local_reward_weight * deviation_from_arrangement))
+            
+        return scores
+
+    def _store_scores_in_agent(self, scores):
+        for agent_name in self.agents:
+            self.world.agents[agent_name].prev_score = scores[agent_name]
+
+    # THANOS EXPERIMENTAL
+    def get_rewards_old(self):
+        """
+        This function assigns reward to all agents based on the following two criterias:
+
+        - global_arrangement_reward : The average distance of all agents from the target
+        - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
+
+        Refer to D. Gadjov and Pavel's paper for more details about it.
+
+        Returns: A dictionary with agent_name as key and reward as a value
+        """
         rewards = {}
         curr_scores = self._compute_scores()
     
