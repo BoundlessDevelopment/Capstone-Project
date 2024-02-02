@@ -72,6 +72,8 @@ class nepiada(ParallelEnv):
         # Note that each name is unique and hence is an ID
         for agent_name in self.world.agents:
             self.possible_agents.append(agent_name)
+        
+        print("NEPIADA INFO: All Agents: ", str(self.possible_agents))
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
@@ -292,7 +294,6 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
-        print("NEPIADA INFO: All Agents: ", str(self.agents))
 
         # A list for each agent to show distance from final target
         self.agents_pos = defaultdict(lambda: defaultdict(list))
