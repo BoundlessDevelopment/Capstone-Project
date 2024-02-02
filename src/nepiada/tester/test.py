@@ -113,7 +113,7 @@ class SimulationTester:
 
 # Example usage
 if __name__ == "__main__":
-    tester = SimulationTester(num_runs=1, config_file="test_cases/default.json")
+    tester = SimulationTester(num_runs=1, config_file="test_cases/everyone_is_your_enemy.json")
     average_score = tester.run_multiple_simulations()
     print("Average Convergence Score over", tester.num_runs, "runs:", average_score)
     tester.print_results()

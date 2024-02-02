@@ -63,8 +63,8 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
-    # screen_height: int = 400
-    # screen_width: int = 400
+    screen_height: int = 400
+    screen_width: int = 400
 
     def __init__(self, json_path=None, **kwargs):
 
