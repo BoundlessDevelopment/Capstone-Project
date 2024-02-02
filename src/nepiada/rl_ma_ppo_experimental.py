@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     config = PPOConfig()
     config = config.training(gamma=0.9, lr=0.01, kl_coeff=0.3, train_batch_size=128)
-    config = config.resources(num_gpus=0)
+    config = config.resources(num_gpus=1)
     config = config.rollouts(num_rollout_workers=1)
 
     # algo = config.build(env="nepiada")
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # tune.Tuner(
     #     "PPO",
     #     run_config=air.RunConfig(
-    #         stop={"training_iteration": 100},
+    #         stop={"training_iteration": 10},
     #         checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
     #     ),
     #     param_space=config.to_dict(),
