@@ -40,6 +40,6 @@ if __name__ == "__main__":
     # algo.train()
     # tune.Tuner(
     #     "DQN",
-    #     run_config=air.RunConfig(stop={"training_iteration":150}),
+    #     run_config=air.RunConfig(stop={"training_iteration":150}, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10)),
     #     param_space=config.to_dict()
     # ).fit()
