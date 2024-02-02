@@ -2,7 +2,8 @@ import ray
 import supersuit as ss
 from ray import tune, air, train
 from ray.rllib.algorithms.dqn.dqn import DQNConfig
-from ray.rllib.algorithms.dqn import DQN
+from ray.rllib.algorithms import Algorithm
+from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
 
@@ -42,14 +43,14 @@ if __name__ == "__main__":
     # algo = DQN(config=config)
     # algo.train()
 
-    stop = {"episodes_total": 60000}
-    tune.Tuner(
-        "DQN",
-        run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
-        param_space=config
-    ).fit()
+    # stop = {"episodes_total": 60000}
+    # tune.Tuner(
+    #     "DQN",
+    #     run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
+    #     param_space=config
+    # ).fit()
 
-    # DQN_agent = DQN.from_checkpoint("C:/Users/thanos/RL_experimental/DQN_2024-02-01_21-40-46/DQN_nepiada_77c1a_00000_0_num_atoms=1_2024-02-01_21-40-46/checkpoint_000005")
+    # DQN_agent = DQN.from_checkpoint("C:/Users/thano/ray_results/DQN_2024-02-02_10-21-56/DQN_nepiada_cd6e8_00000_0_num_atoms=1_2024-02-02_10-21-57/checkpoint_000001")
     # env = env_creator(None)
     # env.reset()
 
@@ -58,4 +59,5 @@ if __name__ == "__main__":
     #     actions = DQN_agent.compute_actions(observations)
 
     #     env.step(actions)
-    # env.close()
+    # env.close() 
+    
