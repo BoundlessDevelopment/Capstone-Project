@@ -28,17 +28,17 @@ if __name__ == "__main__":
 
     replay_config = {
             "type": "MultiAgentPrioritizedReplayBuffer",
-            "capacity": 60000,
+            "capacity": 50000,
             "prioritized_replay_alpha": 0.5,
             "prioritized_replay_beta": 0.5,
             "prioritized_replay_eps": 3e-6,
         }
 
-    config = config.training(replay_buffer_config=replay_config, num_atoms=tune.grid_search([1,]))
+    config = config.training(replay_buffer_config=replay_config, num_atoms=51, n_step=3, noisy=True, v_min=-10.0, v_max=10.0, gamma=0.99, lr=0.0001, train_batch_size=32)
     config = config.resources(num_gpus=1)
-    config = config.rollouts(num_rollout_workers=11)
+    config = config.rollouts(num_rollout_workers=11, rollout_fragment_length=4, compress_observations=True)
     config = config.environment("nepiada")
-    config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
+    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 10000})
 
     # algo = DQN(config=config)
     # algo.train()
@@ -50,14 +50,20 @@ if __name__ == "__main__":
     #     param_space=config
     # ).fit()
 
-    # DQN_agent = DQN.from_checkpoint("C:/Users/thano/ray_results/DQN_2024-02-02_10-21-56/DQN_nepiada_cd6e8_00000_0_num_atoms=1_2024-02-02_10-21-57/checkpoint_000001")
-    # env = env_creator(None)
+    # test_config = DQNConfig()
+    # test_config = test_config.rollouts(num_rollout_workers=0)
+    # test_config = test_config.environment("nepiada")
+    # test_config = test_config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
+
+    # algo = DQN(config=test_config)
+    # algo.restore("C:/Users/thanos/results/DQN_2024-02-02_14-29-18/DQN_nepiada_5c7b1_00000_0_num_atoms=1_2024-02-02_14-29-19/checkpoint_000005")
     # env.reset()
-
-    # while env.agents:
-    #     observations, rewards, terminations, truncations, infos = env.last()
-    #     actions = DQN_agent.compute_actions(observations)
-
-    #     env.step(actions)
-    # env.close() 
+    # observations, infos = env.reset()
+    # while True:
+    #     actions = {}
+    #     for curr_agent_name in env.get_agent_ids():
+    #         actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
+    #     print(actions)
+    #     observations, rewards, terminations, truncations, infos = env.step(actions)
+    # env.close()
     
