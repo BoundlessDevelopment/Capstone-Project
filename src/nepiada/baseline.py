@@ -1,7 +1,6 @@
 # Local imports
 import numpy as np
 import env.nepiada as nepiada
-from utils.config import BaselineConfig
 import pygame
 
 
@@ -193,11 +192,18 @@ def step(agent_name, agent_instance, observations, infos, env, config):
 
     return min_action
 
-def main(included_data=None):
+import json
+from utils.config import BaselineConfig
+
+def main(included_data=None, config_file=None):
     if included_data is None:
         included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
-    env_config = BaselineConfig()
+    if config_file:
+        env_config = BaselineConfig(json_path=config_file)
+    else:
+        env_config = BaselineConfig()
+   
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 

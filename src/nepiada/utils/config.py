@@ -4,6 +4,8 @@
 from utils.noise import GaussianNoise
 from .anim_consts import WIDTH, HEIGHT
 
+import json
+
 
 class Config:
     """
@@ -32,7 +34,7 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-    iterations: int = 50
+    iterations: int = 1
     simulation_dir: str = "plots"
 
     # Agent related parameterss
@@ -61,10 +63,18 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
-    # screen_height: int = 400
-    # screen_width: int = 400
+    screen_height: int = 400
+    screen_width: int = 400
 
-    def __init__(self):
+    def __init__(self, json_path=None, **kwargs):
+
+        # If a JSON file path is provided, load and update attributes
+        if json_path:
+            with open(json_path, 'r') as file:
+                params = json.load(file)
+                for key, value in params.items():
+                    setattr(self, key, value)
+
         self._process_screen_size()
 
     def _process_screen_size(self):
@@ -89,14 +99,14 @@ class Config:
 class BaselineConfig(Config):
     D: int = 1
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, json_path=None, **kwargs):
+        super().__init__(json_path=json_path, **kwargs)
 
 
 # Baseline specific configuration parameters
 class EpsilonBaselineConfig(Config):
     D: int = 1
-    epsilon: int = 0.2
+    epsilon: float = 0.2
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, json_path=None, **kwargs):
+        super().__init__(json_path=json_path, **kwargs)

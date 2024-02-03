@@ -1,0 +1,5 @@
+{
+    "iterations": 5,
+    "num_good_agents": 3,
+    "num_adversarial_agents": 6
+}
