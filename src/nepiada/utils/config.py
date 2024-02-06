@@ -32,24 +32,20 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-<<<<<<< HEAD
-    iterations: int = 5
-=======
     iterations: int = 50
     simulation_dir: str = "plots"
->>>>>>> 824e16e100ce3ac905ed9c5652326e210b244050
 
     # Agent related parameterss
-    agent_grid_width: int = 3
-    agent_grid_height: int = 3
-    num_good_agents: int = 7
-    num_adversarial_agents: int = 2
+    agent_grid_width: int = 2
+    agent_grid_height: int = 2
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 1
 
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 10
     dynamic_comms: bool = True
-    dynamic_comms_radius: int = 15
+    dynamic_comms_radius: int = 50
     dynamic_comms_enforce_minimum: int = 1
     noise = GaussianNoise()
 
@@ -65,6 +61,7 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
+    D: int = 1
     # screen_height: int = 400
     # screen_width: int = 400
 
