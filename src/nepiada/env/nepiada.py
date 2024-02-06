@@ -212,10 +212,6 @@ class nepiada(ParallelEnv):
                     observation[observed_agent_name] = None  # Cannot be observed
             observations[agent_name] = observation
 
-        print("HETAV NEPIADA INFO: Beliefs made from obs graph: ")
-        for key, value in observations.items():
-            print(key, ": ", value)
-
         # We will now use the beliefs and extrema pruning to estimate the position of all other agents
         for agent_name in self.agents:
             agent = self.world.get_agent(agent_name)
@@ -226,14 +222,6 @@ class nepiada(ParallelEnv):
                     observations[agent_name],
                     agent_name
                 )
-                # print("HETAV NEPIADA INFO: Atleast one agent has incomming messages")
-            else:
-                continue
-                # print("HETAV NEPIADA INFO: No incomming messages when computing observations for agents")
-        
-        print("HETAV NEPIADA INFO: Beliefs made from obs and comms graph: ")
-        for key, value in observations.items():
-            print(key, ": ", value)
 
         # Update the beliefs of the agents
         for agent_name in self.agents:
@@ -278,7 +266,6 @@ class nepiada(ParallelEnv):
 
             incoming_all_messages[agent_name] = incoming_agent_messages
 
-        # print("HETAV NEPIADA INFO: Incomming messages: ", incoming_all_messages)
         return incoming_all_messages
 
     def initialize_beliefs(self):
