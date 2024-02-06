@@ -21,16 +21,20 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
     target_y = grid_size / 2
 
     length = len(beliefs)
-    # Calculate the global arrangement cost
+    arrangement_cost_vector = np.array([0.0, 0.0])
+
+    # Calculate the global arrangement cost using vector distances
     for curr_agent_name, agent_belief in beliefs.items():
         if agent_belief is None:
             length -= 1
         else:
-            arrangement_cost += np.sqrt(
-                (agent_belief[0] - target_x) ** 2 + (agent_belief[1] - target_y) ** 2
-            )
+            arrangement_cost_vector += np.array([(agent_belief[0] - target_x), (target_y - agent_belief[1])])
 
-    arrangement_cost /= length
+    # Normalize the global arrangement_cost_vector
+    if (length != 0):
+        arrangement_cost_vector = np.divide(arrangement_cost_vector, length)
+
+    arrangement_cost = np.sqrt(arrangement_cost_vector[0] ** 2 + arrangement_cost_vector[1] ** 2)
 
     # Calculate the target neighbour cost
     for curr_agent_name, target_relative_position in target_neighbours.items():
@@ -88,6 +92,7 @@ def strip_extreme_values_and_update_beliefs(
         if (
             current_agent not in incoming_messages
             or incoming_messages[current_agent] is None
+            or len(incoming_messages[current_agent].items()) == 0
         ):
           
             # No incoming messages about this agent, keep previous state

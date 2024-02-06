@@ -6,8 +6,6 @@ from collections import defaultdict
 
 class Grid():
     def __init__(self, config):
-        print("Grid has been initialized")
-
         self.dim = config.size
         self.config = config
         _, self.state_ax = plt.subplots(figsize=(5, 5))
@@ -18,6 +16,8 @@ class Grid():
 
 
         self.uid_to_type = {}
+
+        print("Grid INFO: Grid Initialized")
 
     def save_agent_types(self,agents): 
         for _, agent in agents.items(): 

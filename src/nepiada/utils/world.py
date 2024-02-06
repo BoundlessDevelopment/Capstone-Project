@@ -23,8 +23,8 @@ class World:
 
         # Set each agent's adjacent target neighbours
         self.__initialize_target_neighbours(self.num_agents, config)
-
         self.screen = self._init_pygame(config.screen_height,config.screen_width)
+        
         # Initialize the Grid
         self.grid = Grid(config)
         self.grid.save_agent_types(self.agents)
@@ -40,9 +40,11 @@ class World:
         # Update the graphs with agent's position
         self.graph.update_graphs(self.agents)
 
-        ## The target where all the drones want to reach
+        # The target where all the drones want to reach
         self.target_x = config.size / 2
         self.target_y = config.size / 2
+
+        print("World INFO: Simulation World has been initialized")
 
     def _init_pygame(self,width=WIDTH,height=HEIGHT):
         # Initialize Pygame
