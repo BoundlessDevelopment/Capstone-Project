@@ -35,7 +35,7 @@ if __name__ == "__main__":
         }
 
     config = config.training(replay_buffer_config=replay_config, num_atoms=tune.grid_search([1,]))
-    config = config.resources(num_gpus=1)
+    config = config.resources(num_gpus=0)
     config = config.rollouts(num_rollout_workers=11)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
