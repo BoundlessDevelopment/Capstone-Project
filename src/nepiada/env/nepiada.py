@@ -110,7 +110,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-           # self.world.graph.render_graph(type="obs")
+            self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -132,45 +132,158 @@ class nepiada(ParallelEnv):
         self._dump_pos_graphs()
         pass
 
-    ## THANOS EXPERIMENTAL
-    def get_observations(self):
+    def strip_extreme_values_and_update_beliefs(
+        self, incoming_messages, curr_beliefs, new_beliefs, agent_name
+    ):
         """
-        Experimental // Experimental
+        This function strips the extreme values from the incoming messages according
+        to the D value. It strips the D greater values compared to it's current beliefs,
+        as well as the D lesser values compared to it's current beliefs and updates the beliefs
+        with the average of the remaining communication messages. If no communication messages
+        are left for the remaining agents, the agent's new belief of the target's agents position
+        remains unchanged.
         """
-        observations = {agent: None for agent in self.agents}
-        self.internal_obs = {agent: None for agent in self.agents}
-        for agent_name in self.agents:
-            observation = OrderedDict()
-            # temp to preserve comms functionality without updates
-            internal_ob = {}
-            # Get the agent
-            curr_agent = self.world.get_agent(agent_name)
-            # Write position of the agent in np array format
-            observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+        D_value = self.config.D
+        for current_agent in self.agents:
+            if current_agent == agent_name or new_beliefs[current_agent] is not None:
+                continue
+            if (
+                current_agent not in incoming_messages
+                or incoming_messages[current_agent] is None
+                or len(incoming_messages[current_agent].items()) == 0
+            ):
+                # No incoming messages about this agent, keep previous state
+                new_beliefs[current_agent] = curr_beliefs[current_agent]
+                continue
 
-            # True positions in np array format
-            true_pos = []
+            in_messages = []
+
+            # Get incoming messages that contain this agent's position
+            for _, comm_message in incoming_messages[current_agent].items():
+                if comm_message is not None:
+                    in_messages.append(comm_message)
+
+            if curr_beliefs[current_agent] is None:
+                # Average all the incoming messages for the case where we don't have an estimate for the current agent
+                x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
+                y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
+                new_beliefs[current_agent] = (x_pos_mean, y_pos_mean)
+                continue
+
+            x_pos_deviation = []
+            y_pos_deviation = []
+            for message in in_messages:
+                x_pos_deviation.append(message[0] - curr_beliefs[current_agent][0])
+                y_pos_deviation.append(message[1] - curr_beliefs[current_agent][1])
+
+            if len(x_pos_deviation) <= D_value * 2 or len(y_pos_deviation) <= D_value * 2:
+                # Not enough messages to strip
+                new_beliefs[current_agent] = curr_beliefs[current_agent]
+                continue
+
+            # Sort the deviations
+            x_pos_deviation.sort()
+            y_pos_deviation.sort()
+
+            # Remove D lowest and D highest values
+            x_pos_deviation = x_pos_deviation[D_value:-D_value]
+            y_pos_deviation = y_pos_deviation[D_value:-D_value]
+
+            # Average the remaining values
+            x_pos_delta = sum(x_pos_deviation) / len(x_pos_deviation)
+            y_pos_delta = sum(y_pos_deviation) / len(y_pos_deviation)
+
+            # Update the beliefs
+            new_beliefs[current_agent] = (
+                curr_beliefs[current_agent][0] + x_pos_delta,
+                curr_beliefs[current_agent][1] + y_pos_delta,
+            )
+
+    ## THANOS EXPERIMENTAL
+    def get_observations(self, infos):
+        """
+        The observation is a NxN matrix where each row 'i' corresponds to Agent i's belief of every other agent
+        in the environment. It takes into account the observation graph, communication graph and the exterma prunning.
+        """
+
+        observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            # agent = self.world.get_agent(agent_name)
+            # print("Agent name: ", agent_name, " - ", agent.type)
+            observation = {}
             for observed_agent_name in self.agents:
                 observed_agent = self.world.get_agent(observed_agent_name)
-                if observed_agent_name in self.world.graph.obs[agent_name]:
-                    true_pos.append(observed_agent.p_pos)
-                    internal_ob[observed_agent_name] = (
+                if observed_agent_name == agent_name or (observed_agent_name in self.world.graph.obs[agent_name]):
+                    # If the agent can observe use this value
+                    # TODO: We should also look into pruning all past beliefs about the 'observed_agent_name' in this agents belief system
+                    observation[observed_agent_name] = (
                         observed_agent.p_pos[0],
                         observed_agent.p_pos[1],
                     )
                 else:
-                    internal_ob[
-                        observed_agent_name
-                    ] = None  # temp to preserve comms functionality without updates
-
-                    # THANOS EXPERIMENTAL - Enable full obs for RL sanity-checking
-                    true_pos.append(observed_agent.p_pos)
-            self.internal_obs[agent_name] = internal_ob
-            observation["true_obs"] = np.array(true_pos, dtype=np.float32)
-            # Can add target neighbours here if desired.
-
+                    observation[observed_agent_name] = None  # Cannot be observed
             observations[agent_name] = observation
+
+        # print("Beliefs after obs graph")
+        # for key, value in observations.items():
+        #     print(key, " - ", value)
+
+        # We will now use the beliefs and extrema pruning to estimate the position of all other agents
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            if "incoming_messages" in infos[agent_name]:
+                self.strip_extreme_values_and_update_beliefs(
+                    infos[agent_name]["incoming_messages"],
+                    agent.beliefs,
+                    observations[agent_name],
+                    agent_name
+                )
+
+        # print("Beliefs after comms graph")
+        # for key, value in observations.items():
+        #     print(key, " - ", value)
+
+        # Update the beliefs of the agents
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            agent.beliefs = observations[agent_name]
+
         return observations
+
+        # observations = {agent: None for agent in self.agents}
+        # self.internal_obs = {agent: None for agent in self.agents}
+        # for agent_name in self.agents:
+        #     observation = OrderedDict()
+        #     # temp to preserve comms functionality without updates
+        #     internal_ob = {}
+        #     # Get the agent
+        #     curr_agent = self.world.get_agent(agent_name)
+        #     # Write position of the agent in np array format
+        #     observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+
+        #     # True positions in np array format
+        #     true_pos = []
+        #     for observed_agent_name in self.agents:
+        #         observed_agent = self.world.get_agent(observed_agent_name)
+        #         if observed_agent_name in self.world.graph.obs[agent_name]:
+        #             true_pos.append(observed_agent.p_pos)
+        #             internal_ob[observed_agent_name] = (
+        #                 observed_agent.p_pos[0],
+        #                 observed_agent.p_pos[1],
+        #             )
+        #         else:
+        #             internal_ob[
+        #                 observed_agent_name
+        #             ] = None  # temp to preserve comms functionality without updates
+
+        #             # THANOS EXPERIMENTAL - Enable full obs for RL sanity-checking
+        #             true_pos.append(observed_agent.p_pos)
+        #     self.internal_obs[agent_name] = internal_ob
+        #     observation["true_obs"] = np.array(true_pos, dtype=np.float32)
+        #     # Can add target neighbours here if desired.
+
+        #     observations[agent_name] = observation
+        # return observations
 
     ## THANOS EXPERIMENTAL
     # def get_observations_old(self):
@@ -200,16 +313,15 @@ class nepiada(ParallelEnv):
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
-            observation = self.internal_obs[agent_name]
+            observation = self.world.graph.obs[agent_name]
 
             incoming_agent_messages = {}
 
             for target_agent_name in self.agents:
                 incoming_communcation_messages = {}
 
-                if not observation[target_agent_name]:
+                if target_agent_name not in observation:
                     # Must estimate where the agent is via communication
-
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
@@ -218,17 +330,17 @@ class nepiada(ParallelEnv):
                             )
                         else:
                             helpful_beliefs = curr_agent.beliefs
+
                         if helpful_beliefs[target_agent_name]:
                             incoming_communcation_messages[helpful_agent] = (
                                 helpful_beliefs[target_agent_name][0],
                                 helpful_beliefs[target_agent_name][1],
                             )
 
-                incoming_agent_messages[
-                    target_agent_name
-                ] = incoming_communcation_messages
+                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
+
         return incoming_all_messages
 
     def initialize_beliefs(self):
@@ -236,9 +348,12 @@ class nepiada(ParallelEnv):
         Initializing the 2xN structure holds where each agent believes that itself and each other agent is located
         """
         for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
+            agent = self.world.get_agent(agent_name)
             for target_agent_name in self.agents:
-                beliefs[target_agent_name] = None
+                if (target_agent_name == agent_name):
+                    agent.beliefs[target_agent_name] = (agent.p_pos[0], agent.p_pos[1])
+                else:
+                    agent.beliefs[target_agent_name] = (np.random.randint(self.config.size), np.random.randint(self.config.size))
 
     def _reset_agent_pos(self):
         for agent_name in self.agents:
@@ -294,6 +409,7 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
+        print("NEPIADA INFO: All Agents: ", str(self.agents))
 
         # A list for each agent to show distance from final target
         self.agents_pos = defaultdict(lambda: defaultdict(list))
@@ -323,15 +439,16 @@ class nepiada(ParallelEnv):
         # Reset the truncations
         self.truncations = {agent: False for agent in self.agents}
 
-        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
+        # Info will be used to pass information about comm graphs, observation graphs, beliefs, and incoming messages
         self.infos = {agent: {} for agent in self.agents}
 
         # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
-        # self.initialize_infos_with_agents()
+        self.initialize_infos_with_agents()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
-        self.observations = self.get_observations()
+        self.observations = self.get_observations(self.infos)
 
+        # Intitialize the belief of each agent about every other agent to None
         self.initialize_beliefs()
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
@@ -381,24 +498,27 @@ class nepiada(ParallelEnv):
         # Update the observation and communication graphs at each iteration
         self.world.update_graphs()
 
-        self.observations = self.get_observations()
+        # Info will be used to pass information about comm graphs, obs graphs, beliefs, and incoming messages
+        self.infos = {agent_name: {} for agent_name in self.agents}
+        for agent_name in self.agents:
+            self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
+            self.infos[agent_name]["obs"] = self.world.graph.obs[agent_name]
+            self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
+            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
 
         # Second pass communicated beliefs
-        # incoming_all_messages = self.get_all_messages()
+        incoming_all_messages = self.get_all_messages()
 
-        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
-        self.infos = {agent_name: {} for agent_name in self.agents}
-        # for agent_name in self.agents:
-        ## THANOS EXPERIMENTAL - This WILL break the baselines
-        # self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
-        # self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
-        #     agent_name
-        # ]
-        # self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
-        # self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
+        for agent_name in self.agents: 
+            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
+                agent_name
+            ]
 
-        # if self.render_mode == "human":
-        #     self.render()
+        if self.render_mode == "human":
+            self.render()
+
+        # Update the observation/belief vector of each agent
+        self.observations = self.get_observations(self.infos)
 
         return self.observations, self.rewards, terminations, truncations, self.infos
 
