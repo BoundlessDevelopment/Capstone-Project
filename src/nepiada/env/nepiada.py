@@ -199,6 +199,7 @@ class nepiada(ParallelEnv):
                     incoming_messages.append(message)
 
                 curr_agent.last_messages[talking_agent] = incoming_messages
+            print(agent_name)
             print(curr_agent.last_messages)
 
         return incoming_all_messages
@@ -293,6 +294,12 @@ class nepiada(ParallelEnv):
         self.observations = self.get_observations()
 
         self.initialize_beliefs()
+
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for target_argent in self.agents:
+                curr_agent.truthful_weights[target_argent] = 1
+            print(curr_agent.truthful_weights)
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
         return self.observations, self.infos
