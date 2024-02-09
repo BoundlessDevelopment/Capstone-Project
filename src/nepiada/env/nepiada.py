@@ -145,7 +145,7 @@ class nepiada(ParallelEnv):
     def get_all_messages(self):
         """
         The 2xNxNxN message structure returned below are the coordinates that each drone receives from a drone about another drone
-        observations[i][j][k] is the location that drone i is told by drone k where drone j is
+        incoming_all_messages[i][j][k] is the location that drone i is told by drone k where drone j is
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
@@ -178,6 +178,29 @@ class nepiada(ParallelEnv):
                 ] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
+        
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for talking_agent in self.agents:
+                incoming_messages = []
+
+                for target_agent in self.agents:
+                    # Check if the keys exist in the nested dictionary
+                    if agent_name in incoming_all_messages and \
+                    target_agent in incoming_all_messages[agent_name] and \
+                    talking_agent in incoming_all_messages[agent_name][target_agent]:
+
+                        message = incoming_all_messages[agent_name][target_agent][talking_agent]
+                    else:
+                        # Handle the case where the key doesn't exist
+                        # This could be a default value or a special indicator
+                        message = None  # or some default value
+
+                    incoming_messages.append(message)
+
+            curr_agent.last_messages[talking_agent] = incoming_messages
+
+
         return incoming_all_messages
 
     def initialize_beliefs(self):

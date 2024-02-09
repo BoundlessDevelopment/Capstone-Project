@@ -47,6 +47,10 @@ class Agent(Entity):  # properties of agent entities
         # This will be populated with the positions that the agent believes itself and other agents to be in.
         self.beliefs = {}
 
+        self.truthful_weights = {}
+
+        self.last_messages = {}
+
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
 
