@@ -39,7 +39,7 @@ class AgentModel:
 
     def predict_proba(self, X):
         return self.model.predict_proba(X)[:, 1]  # Probability of being adversarial
-
+"""
 # Create synthetic data
 num_samples = 100  # Number of samples
 num_agents = 9     # Number of agents per sample
@@ -57,3 +57,4 @@ example_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None
 processed_input = preprocess_input(example_input)
 prob_adversarial = agent_model.predict_proba([processed_input])
 print("Probability of being adversarial:", prob_adversarial[0])
+"""

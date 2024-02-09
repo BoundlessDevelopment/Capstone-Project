@@ -1,9 +1,8 @@
 import numpy as np
 import itertools
-
-# Local imports
 from enum import Enum
 from utils.config import Config
+from .agent_model import AgentModel  # Import the AgentModel
 
 
 # Types of agents
@@ -53,6 +52,8 @@ class Agent(Entity):  # properties of agent entities
 
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
+
+        self.model = AgentModel()
 
         print("Agent INFO: Agent with uid " + str(self.uid) + " has been initialized")
 

@@ -17,6 +17,7 @@ from collections import defaultdict
 import os
 import matplotlib.pyplot as plt
 
+from utils.agent_model import *
 
 def parallel_env(config: Config):
     """
@@ -199,8 +200,18 @@ class nepiada(ParallelEnv):
                     incoming_messages.append(message)
 
                 curr_agent.last_messages[talking_agent] = incoming_messages
-            print(agent_name)
-            print(curr_agent.last_messages)
+            #print(agent_name)
+            #print(curr_agent.last_messages)
+
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for target_argent in self.agents:
+                #example_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None, (5.0, 34.0)]
+                example_input = curr_agent.last_messages[talking_agent]
+                processed_input = preprocess_input(example_input)
+                prob_adversarial = curr_agent.model.predict_proba([processed_input])
+                curr_agent.truthful_weights[target_argent] = prob_adversarial[0]
+            #print(curr_agent.truthful_weights)
 
         return incoming_all_messages
 
@@ -300,6 +311,18 @@ class nepiada(ParallelEnv):
             for target_argent in self.agents:
                 curr_agent.truthful_weights[target_argent] = 1
             print(curr_agent.truthful_weights)
+        
+        num_samples = 100  # Number of samples
+        num_agents = 9     # Number of agents per sample
+        X, y = generate_synthetic_data(num_samples, num_agents)
+
+        # Split the data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Initialize and train the model
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            curr_agent.model.train(X_train, y_train)
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
         return self.observations, self.infos
