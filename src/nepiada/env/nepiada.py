@@ -198,8 +198,8 @@ class nepiada(ParallelEnv):
 
                     incoming_messages.append(message)
 
-            curr_agent.last_messages[talking_agent] = incoming_messages
-
+                curr_agent.last_messages[talking_agent] = incoming_messages
+            print(curr_agent.last_messages)
 
         return incoming_all_messages
 
