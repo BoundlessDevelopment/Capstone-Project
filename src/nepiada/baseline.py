@@ -58,7 +58,7 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
         config.local_reward_weight * target_neighbor_cost
     )
 
-def step(agent_name, agent_instance, observations, infos, env, config):
+def step(agent_name, agent_instance, beliefs, env, config):
   
     """
     This function is called every step of the simulation. It is responsible for
@@ -71,27 +71,24 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     action_costs = {}
     for action in range(env.action_space(agent_name).n):
         # Calculate the cost for the action
-        observations[agent_name] = (
+        beliefs[agent_name] = np.array((
             agent_instance.p_pos[0] + config.possible_moves[action][0],
             agent_instance.p_pos[1] + config.possible_moves[action][1],
-        )
+        ), dtype=np.float32)
+
         action_costs[action] = calculate_cost(
             agent_name,
             agent_instance.target_neighbour,
-            observations,
+            beliefs,
             config.size,
             config,
         )
 
         # Reset the original position of the agent
-        observations[agent_name] = (
-            agent_instance.p_pos[0],
-            agent_instance.p_pos[1],
-        )
+        beliefs[agent_name] = agent_instance.p_pos
 
     # Choose the action with the lowest cost
     min_action = min(action_costs, key=action_costs.get)
-
     return min_action
 
 def main(included_data=None):
