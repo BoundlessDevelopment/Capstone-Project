@@ -18,6 +18,7 @@ from collections import OrderedDict, defaultdict
 import os
 import matplotlib.pyplot as plt
 
+TYPE_CHECK = True
 
 def parallel_env(config: Config):
     """
@@ -108,7 +109,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            # self.world.graph.render_graph(type="obs")
+            self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -131,7 +132,7 @@ class nepiada(ParallelEnv):
         pass
 
     def strip_extreme_values_and_update_beliefs(
-        self, incoming_messages, curr_beliefs, new_beliefs, agent_name, target_agent_name
+        self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
     ):
         """
         This function strips the extreme values from the incoming messages according
@@ -150,7 +151,7 @@ class nepiada(ParallelEnv):
                 message = incoming_messages[other_agent][target_agent_name]
                 
                 # Type check
-                if not isinstance(message, (np.ndarray, np.generic)):
+                if TYPE_CHECK and not isinstance(message, (np.ndarray, np.generic)):
                     print("Found type: ", type(message))
                     assert False, "The type of helpful belief is not a numpy array"
 
@@ -161,11 +162,10 @@ class nepiada(ParallelEnv):
             new_beliefs[target_agent_name] = curr_beliefs[target_agent_name]
 
             # Type check
-            if not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+            if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
                 print("Found type: ", type(curr_beliefs[target_agent_name]))
                 assert False, "The type of net_estimate when no info is available is not a numpy array"
             
-            # print("No info received from communication or observation graphs!")
         else:
             if curr_beliefs[target_agent_name] is None:
                 # Average all the incoming messages for the case where we don't have an estimate for the current agent
@@ -176,7 +176,7 @@ class nepiada(ParallelEnv):
 
             if len(in_messages) <= D_value * 2:
                 # Not enough messages to strip
-                if not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+                if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
                     print("Found type: ", type(curr_beliefs[target_agent_name]))
                     assert False, "The type of net_estimate when no info is available is not a numpy array"
 
@@ -225,8 +225,6 @@ class nepiada(ParallelEnv):
                     agent_beliefs[observed_agent_name] = None  # Cannot be observed
             beliefs[agent_name] = agent_beliefs
 
-        # print(f"Beliefs after observation graph: {beliefs}\n")
-
         # Estimate the position of the remaining agents using comm graph and extrema pruning
         for agent_name in self.agents:
             agent = self.world.get_agent(agent_name)
@@ -234,7 +232,6 @@ class nepiada(ParallelEnv):
             for other_agent_name in self.agents:
                 # The other agent is either itself or observed
                 if (agent == other_agent_name or beliefs[agent_name][other_agent_name] is not None):
-                    # print("Agent info received via observation graph!")
                     continue
 
                 if incoming_messages[agent_name] is not None:
@@ -242,15 +239,11 @@ class nepiada(ParallelEnv):
                         incoming_messages[agent_name],
                         agent.beliefs,
                         beliefs[agent_name],
-                        agent_name,
                         other_agent_name
                     )
-                    # print("Agent info received via communication graph!")
                 else:
                     assert False, "Logically, we should never reach here"
                     print("Agent not within communication or observation radius!")
-
-        # print(f"Beliefs after observation and comm. graph: {beliefs}\n")
 
         # Sanity check
         for agent_name in self.agents:
@@ -259,7 +252,7 @@ class nepiada(ParallelEnv):
             for other_agent_name in self.agents:
                 if other_agent_name not in beliefs[agent_name] or beliefs[agent_name][other_agent_name] is None:
                     assert False, "By this point none of the beliefs should be None"
-                if not isinstance(beliefs[agent_name][other_agent_name], (np.ndarray, np.generic)):
+                if TYPE_CHECK and not isinstance(beliefs[agent_name][other_agent_name], (np.ndarray, np.generic)):
                     print("Found type: ", type(beliefs[agent_name][other_agent_name]))
                     print("The entry: ", (beliefs[agent_name][other_agent_name]))
                     assert False, "The final state of belief is not a numpy array"
@@ -288,39 +281,18 @@ class nepiada(ParallelEnv):
 
         # Sanity Check
         for agent, observation in observations.items():
-            if not isinstance(observation["agent_position"], (np.ndarray, np.generic)):
+            if TYPE_CHECK and not isinstance(observation["agent_position"], (np.ndarray, np.generic)):
                 print("Found position type: ", type(observation["agent_position"]))
                 print("The entry: ", (observation["agent_position"]))
                 assert False, "The position in RLib observation is not a numpy array"
 
-            if not isinstance(observation["beliefs"], (np.ndarray, np.generic)):
+            if TYPE_CHECK and not isinstance(observation["beliefs"], (np.ndarray, np.generic)):
                 print("Found beliefs type: ", type(observation["beliefs"]))
                 print("The entry: ", (observation["beliefs"]))
                 assert False, "The beliefs in RLib observation is not a numpy array"
             
         # print(f"RLib observation: {observations}\n")
         return observations
-
-    ## THANOS EXPERIMENTAL
-    # def get_observations_old(self):
-    #     """
-    #     The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
-    #     observations[i][j] is the location that drone i sees drone j at
-    #     """
-    #     observations = {agent: None for agent in self.agents}
-    #     for agent_name in self.agents:
-    #         observation = {}
-    #         for observed_agent_name in self.agents:
-    #             observed_agent = self.world.get_agent(observed_agent_name)
-    #             if observed_agent_name in self.world.graph.obs[agent_name]:
-    #                 observation[observed_agent_name] = (
-    #                     observed_agent.p_pos[0],
-    #                     observed_agent.p_pos[1],
-    #                 )
-    #             else:
-    #                 observation[observed_agent_name] = None  # Cannot be observed
-    #         observations[agent_name] = observation
-    #     return observations
 
     def get_all_messages(self):
         """
@@ -346,7 +318,7 @@ class nepiada(ParallelEnv):
 
                         # Type check
                         for key, value in helpful_beliefs.items():
-                            if not isinstance(value, (np.ndarray, np.generic)):
+                            if TYPE_CHECK and not isinstance(value, (np.ndarray, np.generic)):
                                 print("Found type: ", type(value))
                                 assert False, "The type of helpful belief is not a numpy array"
 
@@ -522,8 +494,8 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents: 
             self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
 
-        # if self.render_mode == "human":
-        #     self.render()
+        if self.render_mode == "human":
+            self.render()
 
         self.observations = self.get_observations(self.incoming_msgs)
 
