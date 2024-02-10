@@ -80,12 +80,12 @@ class nepiada(ParallelEnv):
         ## THANOS EXPERIMENTAL ##
         return Dict(
             {
-                "position": Box(
-                    low=0, high=self.config.size, shape=(2,), dtype=np.float32
-                ),
+                # "position": Box(
+                #     low=0, high=self.config.size + 2, shape=(2,), dtype=np.float32
+                # ),
                 "beliefs": Box(
                     low=0,
-                    high=self.config.size,
+                    high=self.config.size + 1,
                     shape=(self.total_agents, 2),
                     dtype=np.float32,
                 ),
@@ -282,7 +282,7 @@ class nepiada(ParallelEnv):
             # Get the agent
             curr_agent = self.world.get_agent(agent_name)
             # Write position of the agent in np array format
-            observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+            # observation["position"] = np.array(curr_agent.p_pos, dtype=np.float32)
 
             # True positions in np array format
             final_beliefs = []
@@ -292,7 +292,19 @@ class nepiada(ParallelEnv):
             observation["beliefs"] = np.array(final_beliefs, dtype=np.float32)
             observations[agent_name] = observation
 
-        print(f"RLib observation: {observations}\n")
+        # Sanity Check
+        for agent, observation in observations.items():
+            # if not isinstance(observation["position"], (np.ndarray, np.generic)):
+            #     print("Found position type: ", type(observation["position"]))
+            #     print("The entry: ", (observation["position"]))
+            #     assert False, "The position in RLib observation is not a numpy array"
+
+            if not isinstance(observation["beliefs"], (np.ndarray, np.generic)):
+                print("Found beliefs type: ", type(observation["beliefs"]))
+                print("The entry: ", (observation["beliefs"]))
+                assert False, "The beliefs in RLib observation is not a numpy array"
+            
+        # print(f"RLib observation: {observations}\n")
 
         return observations
 
