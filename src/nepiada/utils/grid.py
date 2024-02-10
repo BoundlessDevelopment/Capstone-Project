@@ -73,6 +73,6 @@ class Grid:
         self.state[new_x_coord][new_y_coord].add(agent.uid)
 
         # Update the agent position
-        agent.p_pos = (new_x_coord, new_y_coord)
+        agent.p_pos = np.array([new_x_coord, new_y_coord], dtype=np.float32)
 
         return 0
