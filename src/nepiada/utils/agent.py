@@ -46,7 +46,7 @@ class Agent(Entity):  # properties of agent entities
         # This will be populated with the positions that the agent believes itself and other agents to be in.
         self.beliefs = {}
 
-        self.truthful_weights = {}
+        self.truthful_weights = []
 
         self.last_messages = {}
 

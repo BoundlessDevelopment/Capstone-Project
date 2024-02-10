@@ -141,8 +141,8 @@ def strip_extreme_values_and_update_beliefs(
             curr_beliefs[current_agent][1] + y_pos_delta,
         )
 
-def weighted_beliefs(incoming_messages, new_beliefs, agent_name, all_agents):
-    print(agent_name)
+def weighted_beliefs(incoming_messages, new_beliefs, agent_name, all_agents, agent_instance):
+    #print(agent_name)
     for target_agent in all_agents:
         positions = []
         for talking_agent in all_agents:
@@ -151,8 +151,19 @@ def weighted_beliefs(incoming_messages, new_beliefs, agent_name, all_agents):
                 positions.append(incoming_messages[target_agent][talking_agent])
             else:
                 positions.append(None)
-        print(target_agent)
-        print(positions)
+        finalx, finaly, denom, empty = 0,0,0, True
+        for i in range(len(positions)):
+            if(positions[i] != None):
+                empty = False
+                finalx += positions[i][0]*agent_instance.truthful_weights[i]
+                finaly += positions[i][1]*agent_instance.truthful_weights[i]
+                denom += agent_instance.truthful_weights[i]
+        if(not empty):
+            new_beliefs[target_agent] = (finalx/denom, finaly/denom)
+        elif (agent_instance.beliefs[target_agent] is not None):
+            new_beliefs[target_agent] = (agent_instance.beliefs[target_agent][0], agent_instance.beliefs[target_agent][1])
+        #print(target_agent)
+        #print(positions)
 
 def step(agent_name, agent_instance, observations, infos, env, config):
   
@@ -176,7 +187,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_name,
             env.agents,
         )
-        weighted_beliefs(infos["incoming_messages"], new_beliefs, agent_name, env.agents)
+        weighted_beliefs(infos["incoming_messages"], new_beliefs, agent_name, env.agents, agent_instance)
 
     # Calculate the cost for every possible action
     action_costs = {}

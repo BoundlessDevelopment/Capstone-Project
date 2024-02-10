@@ -210,7 +210,7 @@ class nepiada(ParallelEnv):
                 example_input = curr_agent.last_messages[talking_agent]
                 processed_input = preprocess_input(example_input)
                 prob_adversarial = curr_agent.model.predict_proba([processed_input])
-                curr_agent.truthful_weights[target_argent] = prob_adversarial[0]
+                curr_agent.truthful_weights.append(prob_adversarial[0])
             #print(curr_agent.truthful_weights)
 
         return incoming_all_messages
@@ -309,8 +309,8 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             curr_agent = self.world.get_agent(agent_name)
             for target_argent in self.agents:
-                curr_agent.truthful_weights[target_argent] = 1
-            print(curr_agent.truthful_weights)
+                curr_agent.truthful_weights.append(1)
+           #print(curr_agent.truthful_weights)
         
         num_samples = 100  # Number of samples
         num_agents = 9     # Number of agents per sample
