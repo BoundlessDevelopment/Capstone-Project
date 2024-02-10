@@ -34,6 +34,7 @@ class Config:
     size: int = 50
     iterations: int = 50
     simulation_dir: str = "plots"
+    pass_agents_in_infos: bool = False
 
     # Agent related parameterss
     agent_grid_width: int = 2
@@ -85,9 +86,9 @@ class Config:
 
         return
 
-
 # Baseline specific configuration parameters
 class BaselineConfig(Config):
+    pass_agents_in_infos: bool = True
     D: int = 1
 
     def __init__(self):
