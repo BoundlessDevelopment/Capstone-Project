@@ -77,9 +77,9 @@ class UniformNoise(AdversarialNoiseStrategy):
                 # Skip None values or handle them differently if needed
                 noisy_data[key] = value
                 continue
-            if isinstance(value, tuple):
+            if isinstance(value, (np.ndarray, np.generic)):
                 # Add noise to each element in the tuple
-                noisy_data[key] = tuple(val + np.random.uniform(loc=0, scale=1) for val in value if val is not None)
+                noisy_data[key] = np.array([val + np.random.uniform(loc=0, scale=1) for val in value if val is not None], dtype=np.float32)
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
@@ -100,9 +100,9 @@ class GaussianNoise(AdversarialNoiseStrategy):
                 # Skip None values or handle them differently if needed
                 noisy_data[key] = value
                 continue
-            if isinstance(value, tuple):
+            if isinstance(value, (np.ndarray, np.generic)):
                 # Add noise to each element in the tuple
-                noisy_data[key] = tuple(val + np.random.normal(loc=0, scale=1) for val in value if val is not None)
+                noisy_data[key] = np.array([val + np.random.normal(loc=0, scale=1) for val in value if val is not None], dtype=np.float32)
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
@@ -123,9 +123,9 @@ class LaplacianNoise(AdversarialNoiseStrategy):
                 # Skip None values or handle them differently if needed
                 noisy_data[key] = value
                 continue
-            if isinstance(value, tuple):
+            if isinstance(value, (np.ndarray, np.generic)):
                 # Add noise to each element in the tuple
-                noisy_data[key] = tuple(val + np.random.laplace(loc=0, scale=1) for val in value if val is not None)
+                noisy_data[key] = np.array([val + np.random.laplace(loc=0, scale=1) for val in value if val is not None], dtype=np.float32)
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
