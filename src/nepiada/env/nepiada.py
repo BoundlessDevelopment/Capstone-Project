@@ -77,7 +77,10 @@ class nepiada(ParallelEnv):
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
-        ## THANOS EXPERIMENTAL ##
+        """
+        This is the way the observations are structured for RLib. Eventually all the values are flattened internally.
+        Note that the order in which the observation is flattened is alphabetically in order of the key values.
+        """
         return Dict(
             {
                 "beliefs": Box(
@@ -207,15 +210,14 @@ class nepiada(ParallelEnv):
                 curr_beliefs[target_agent_name][1] + y_pos_delta,
             ], dtype=np.float32)
 
-    ## THANOS EXPERIMENTAL
     def get_observations(self, incoming_messages):
         """
-        This function strips the extreme values from the incoming messages according
-        to the D value. It strips the D greater values compared to it's current beliefs,
-        as well as the D lesser values compared to it's current beliefs and updates the beliefs
-        with the average of the remaining communication messages. If no communication messages
-        are left for the remaining agents, the agent's new belief of the target's agents position
-        remains unchanged.
+        The observation space is an OrderedDict where the key is the agent_name and the value is a dictionary of two types of observations:
+
+        - agent_position: The current position of the agent
+        - beliefs: The belief each agent has about every other agents position
+            - This is made by first getting info about observable agents
+            - Then for the rest of the agents we estimate using the communicated messages
         """
         beliefs = {agent: None for agent in self.agents}
 
@@ -410,7 +412,6 @@ class nepiada(ParallelEnv):
 
         self._reset_agent_pos()
 
-        ## THANOS EXPERIMENTAL - RESET CHANGES
         # Reinitialize the grid
         self.world.grid.reset_grid()
         self.world.grid.update_grid(self.world.agents)
@@ -429,11 +430,12 @@ class nepiada(ParallelEnv):
         # Reset the truncations
         self.truncations = {agent: False for agent in self.agents}
 
-        # Infos is empty
+        # Infos is used to pass aditional information
         self.infos = {agent: {} for agent in self.agents}
 
-        # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
-        self.initialize_infos_with_agents()
+        # Initialize the infos with the agent instances, so the algorithm can access agent beliefs.
+        if (self.config.pass_agents_in_infos):
+            self.initialize_infos_with_agents()
 
         # For incomming messages
         self.incoming_msgs = {agent: {} for agent in self.agents}
@@ -506,8 +508,8 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents: 
             self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         self.observations = self.get_observations(self.incoming_msgs)
 
