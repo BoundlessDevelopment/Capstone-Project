@@ -112,7 +112,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-        #    self.world.graph.render_graph(type="obs")
+            self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -401,7 +401,6 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
-        print("NEPIADA INFO: All Agents: ", str(self.agents))
 
         # A list for each agent to show distance from final target
         self.agents_pos = defaultdict(lambda: defaultdict(list))
@@ -512,7 +511,6 @@ class nepiada(ParallelEnv):
         #     self.render()
 
         self.observations = self.get_observations(self.incoming_msgs)
-
         return self.observations, self.rewards, terminations, truncations, self.infos
 
     def move_drones(self, actions):
@@ -568,15 +566,10 @@ class nepiada(ParallelEnv):
 
                 min_dist = min(dist_to_left, dist_to_right, dist_to_top, dist_to_bottom)
                 if min_dist <= 6:
-                    rewards[agent_name] -= (6 - min_dist) * 1.5
+                    rewards[agent_name] -= (6 - min_dist)
             else:
                 # -10 reward for agents that collided with boundary
                 rewards[agent_name] = -10
-
-        # THANOS EXPERIMENTAL - Linear decay with num moves, to a minimum of -2 (at iteration 50, a reward of 10 will actually be a reward -2)
-        for agent_name in self.agents:
-            linear_decay_rate = (rewards[agent_name] - -2) / self.config.iterations
-            rewards[agent_name] = min(rewards[agent_name], rewards[agent_name] - (linear_decay_rate * self.num_moves))
         
         self._store_scores_in_agent(curr_scores)
         return rewards
