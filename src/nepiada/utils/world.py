@@ -75,12 +75,11 @@ class World:
         for i in range(num_agents):
             # Initialize the agent
             agent_name = ""
-            ## THANOS EXPERIMENTAL - Names change
             if i < config.num_adversarial_agents:
-                agent_name = str(i)
+                agent_name = "adversarial_" + str(i)
                 agents[agent_name] = Agent(AgentType.ADVERSARIAL)
             else:
-                agent_name = str(i)
+                agent_name = "truthful_" + str(i)
                 agents[agent_name] = Agent(AgentType.TRUTHFUL)
 
             # Map the uid to agent name for later use

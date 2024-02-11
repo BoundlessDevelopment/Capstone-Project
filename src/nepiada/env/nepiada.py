@@ -112,7 +112,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            #self.world.graph.render_graph(type="obs")
+        #    self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -581,6 +581,7 @@ class nepiada(ParallelEnv):
         self._store_scores_in_agent(curr_scores)
         return rewards
 
+    ## THANOS EXPERIMENTAL
     def _compute_scores(self):
         """
         Compute the scores of the agents based on their distance from the target
