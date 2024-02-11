@@ -3,6 +3,7 @@ import itertools
 from enum import Enum
 from utils.config import Config
 from .agent_model import AgentModel  # Import the AgentModel
+import pickle
 
 
 # Types of agents
@@ -53,7 +54,8 @@ class Agent(Entity):  # properties of agent entities
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
 
-        self.model = AgentModel()
+        with open('agent_model.pkl', 'rb') as file:
+            self.model = pickle.load(file)
 
         print("Agent INFO: Agent with uid " + str(self.uid) + " has been initialized")
 
