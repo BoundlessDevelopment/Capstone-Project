@@ -204,9 +204,10 @@ class nepiada(ParallelEnv):
             #print(curr_agent.last_messages)
 
         for agent_name in self.agents:
-            #print(agent_name)
+            print(agent_name)
             curr_agent = self.world.get_agent(agent_name)
             curr_agent.truthful_weights = []
+            print(self.agents)
             for target_argent in self.agents:
                 example_input = curr_agent.last_messages[target_argent]
                 # Check if example_input is not a list with all None elements
@@ -221,7 +222,7 @@ class nepiada(ParallelEnv):
                 processed_input = preprocess_input(example_input)
                 prob_adversarial = curr_agent.model.predict_proba([processed_input])
                 curr_agent.truthful_weights.append(prob_adversarial[0][0])
-            #print(curr_agent.truthful_weights)
+            print(curr_agent.truthful_weights)
 
         return incoming_all_messages
 
