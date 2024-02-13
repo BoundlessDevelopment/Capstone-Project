@@ -42,11 +42,7 @@ num_agents = 9     # Number of agents per sample
 X, y = generate_synthetic_data(num_samples, num_agents)
 
 # Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Initialize and train the model
-agent_model = AgentModel()
-agent_model.train(X_train, y_train)
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
 def load_data_from_file(file_name):
@@ -64,19 +60,28 @@ def load_data_from_file(file_name):
 
 # Load and preprocess the data from the file
 file_name = '../tester/data.txt'
-#X, y = load_data_from_file(file_name)
-
+X, y = load_data_from_file(file_name)
+sum, sum1 = 0,0
 # Fit the model with this data
-agent_model = AgentModel()
-agent_model.train(X, y)
+for i in range(10):
+    print(i)
+    agent_model = AgentModel()
+    agent_model.train(X, y)
 
-# Optionally, save the trained model
-with open('agent_model.pkl', 'wb') as file:
-    pickle.dump(agent_model.model, file)
+    # Optionally, save the trained model
+    #with open('agent_model.pkl', 'wb') as file:
+    #    pickle.dump(agent_model.model, file)
 
-# Example prediction with probability
-base_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None, (5.0, 34.0)]
-example_input = k * base_input
-processed_input = preprocess_input(example_input)
-prob_adversarial = agent_model.predict_proba([processed_input])
-print("Probability of being adversarial:", prob_adversarial[0])
+    # Example prediction with probability
+    base_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None, (5.0, 34.0)]
+    example_input = k * base_input
+    processed_input = preprocess_input(example_input)
+    prob_adversarial = agent_model.predict_proba([processed_input])
+    sum += prob_adversarial[0]
+    fake = [(random.uniform(0, 20), random.uniform(0, 20))]*18
+    processed_input = preprocess_input(fake)
+    prob_adversarial = agent_model.predict_proba([processed_input])
+    sum1 += prob_adversarial[0]
+print("Probability of being adversarial:", sum/10)
+print("Probability of being adversarial:", sum1/10)
+
