@@ -181,8 +181,10 @@ class nepiada(ParallelEnv):
             incoming_all_messages[agent_name] = incoming_agent_messages
         
         for agent_name in self.agents:
+            #print(agent_name)
             curr_agent = self.world.get_agent(agent_name)
             for talking_agent in self.agents:
+                #print(talking_agent)
                 incoming_messages = []
 
                 for target_agent in self.agents:
@@ -198,32 +200,40 @@ class nepiada(ParallelEnv):
                         message = None  # or some default value
 
                     incoming_messages.append(message)
-
-                curr_agent.last_messages[talking_agent] = incoming_messages
+                
+               
+                if(talking_agent not in curr_agent.last_messages):
+                    curr_agent.last_messages[talking_agent] = [None]*9
+                
+                curr_agent.last_messages[talking_agent].extend(incoming_messages)
+                if(len(curr_agent.last_messages[talking_agent]) > 18):
+                    for i in range(9):
+                        curr_agent.last_messages[talking_agent].pop(0)
+                
+                #print(curr_agent.last_messages[talking_agent])
+                
             #print(agent_name)
-            #print(curr_agent.last_messages)
 
         for agent_name in self.agents:
-            print(agent_name)
+            #print(agent_name)
             curr_agent = self.world.get_agent(agent_name)
             curr_agent.truthful_weights = []
-            print(self.agents)
-            for target_argent in self.agents:
-                example_input = curr_agent.last_messages[target_argent]
+            #print(self.agents)
+            for target_agent in self.agents:
+                example_input = curr_agent.last_messages[target_agent]
                 # Check if example_input is not a list with all None elements
-                if any(x is not None for x in example_input):
+                #print(example_input)
+                if any(x is not None for x in example_input[:9]) and any(x is not None for x in example_input[-9:]):
                     # Determine the label based on the target_argent's name
-                    label = 0 if target_argent in ['adversarial_0', 'adversarial_1'] else 1
-
+                    label = 0 if target_agent in ['adversarial_0', 'adversarial_1'] else 1
                     # Append example input and label to a txt file
                     with open('data.txt', 'a') as file:
                         file.write(f"{example_input}*{label}\n")
-
+                
                 processed_input = preprocess_input(example_input)
                 prob_adversarial = curr_agent.model.predict_proba([processed_input])
                 curr_agent.truthful_weights.append(prob_adversarial[0][0])
             print(curr_agent.truthful_weights)
-
         return incoming_all_messages
 
     def initialize_beliefs(self):
