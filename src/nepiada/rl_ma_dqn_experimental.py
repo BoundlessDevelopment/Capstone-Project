@@ -55,8 +55,8 @@ if __name__ == "__main__":
     config = config.rollouts(num_rollout_workers=11, compress_observations=True)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 150000})
-    config = config.callbacks(NepiadaCallbacks)
+    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 100000})
+  #  config = config.callbacks(NepiadaCallbacks)
 
     ### TRAINING ####
     agents_env = env.get_agent_ids()
