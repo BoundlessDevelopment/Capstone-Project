@@ -64,7 +64,7 @@ if __name__ == "__main__":
     best_reward_mean = -1000
     for i in range(10000):
         result = algo.train()
-        agent_epsilons = ""
+        print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
         if result["episode_reward_mean"] > best_reward_mean:
             print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
             best_reward_mean = result["episode_reward_mean"]
