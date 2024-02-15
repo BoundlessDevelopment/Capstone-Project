@@ -54,13 +54,6 @@ if __name__ == "__main__":
     # algo.restore("C:/Users/thanos/testing/PPO_2024-02-01_22-57-05/PPO_nepiada_21646_00000_0_2024-02-01_22-57-06/checkpoint_000486")
     # env.reset()
 
-    # while True:
-    #     observations, rewards, terminations, truncations, infos = env.last()
-    #     actions = algo.compute_actions(observations)
-
-    #     env.step(actions)
-    # env.close() 
-
     # for agent in env.agent_iter():
     #     observation, reward, termination, truncation, info = env.last()
     #     action = algo.compute_single_action(observation)
