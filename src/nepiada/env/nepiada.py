@@ -234,7 +234,7 @@ class nepiada(ParallelEnv):
                 
                 processed_input = preprocess_input(example_input)
                 prob_adversarial = curr_agent.model.predict_proba([processed_input])
-                curr_agent.truthful_weights.append(prob_adversarial[0][0])
+                curr_agent.truthful_weights.append(prob_adversarial[0])
             print(curr_agent.truthful_weights)
         return incoming_all_messages
 

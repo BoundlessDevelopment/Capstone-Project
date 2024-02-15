@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import random
 import pickle
 
-k = 2  # Number of repetitions per agent
+k = 10  # Number of repetitions per agent
 
 def preprocess_input(input_data):
     processed_data = []
@@ -62,26 +62,27 @@ def load_data_from_file(file_name):
 file_name = '../tester/data.txt'
 X, y = load_data_from_file(file_name)
 sum, sum1 = 0,0
-# Fit the model with this data
-for i in range(10):
-    print(i)
-    agent_model = AgentModel()
-    agent_model.train(X, y)
+if __name__ == "__main__":
+    # Fit the model with this data
+    for i in range(10):
+        print(i)
+        agent_model = AgentModel()
+        agent_model.train(X, y)
 
-    # Optionally, save the trained model
-    #with open('agent_model.pkl', 'wb') as file:
-    #    pickle.dump(agent_model.model, file)
+        # Optionally, save the trained model
+        #with open('agent_model.pkl', 'wb') as file:
+        #    pickle.dump(agent_model.model, file)
 
-    # Example prediction with probability
-    base_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None, (5.0, 34.0)]
-    example_input = k * base_input
-    processed_input = preprocess_input(example_input)
-    prob_adversarial = agent_model.predict_proba([processed_input])
-    sum += prob_adversarial[0]
-    fake = [(random.uniform(0, 20), random.uniform(0, 20))]*18
-    processed_input = preprocess_input(fake)
-    prob_adversarial = agent_model.predict_proba([processed_input])
-    sum1 += prob_adversarial[0]
-print("Probability of being adversarial:", sum/10)
-print("Probability of being adversarial:", sum1/10)
+        # Example prediction with probability
+        base_input = [None, (14.4557, 8.9661), None, None, (20, 19), None, None, None, (5.0, 34.0)]
+        example_input = k * base_input
+        processed_input = preprocess_input(example_input)
+        prob_adversarial = agent_model.predict_proba([processed_input])
+        sum += prob_adversarial[0]
+        fake = [(random.uniform(0, 20), random.uniform(0, 20))]*90
+        processed_input = preprocess_input(fake)
+        prob_adversarial = agent_model.predict_proba([processed_input])
+        sum1 += prob_adversarial[0]
+    print("Probability of being adversarial:", sum/10)
+    print("Probability of being adversarial:", sum1/10)
 
