@@ -38,8 +38,8 @@ class Config:
     # Agent related parameterss
     agent_grid_width: int = 3
     agent_grid_height: int = 3
-    num_good_agents: int = 7
-    num_adversarial_agents: int = 2
+    num_good_agents: int = 5
+    num_adversarial_agents: int = 4
 
     # Graph update parameters
     dynamic_obs: bool = True

@@ -17,6 +17,7 @@ from collections import defaultdict
 import os
 import matplotlib.pyplot as plt
 
+from utils.agent_model import *
 
 def parallel_env(config: Config):
     """
@@ -145,7 +146,7 @@ class nepiada(ParallelEnv):
     def get_all_messages(self):
         """
         The 2xNxNxN message structure returned below are the coordinates that each drone receives from a drone about another drone
-        observations[i][j][k] is the location that drone i is told by drone k where drone j is
+        incoming_all_messages[i][j][k] is the location that drone i is told by drone k where drone j is
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
@@ -178,6 +179,63 @@ class nepiada(ParallelEnv):
                 ] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
+        
+        for agent_name in self.agents:
+            #print(agent_name)
+            curr_agent = self.world.get_agent(agent_name)
+            for talking_agent in self.agents:
+                #print(talking_agent)
+                incoming_messages = []
+
+                for target_agent in self.agents:
+                    # Check if the keys exist in the nested dictionary
+                    if agent_name in incoming_all_messages and \
+                    target_agent in incoming_all_messages[agent_name] and \
+                    talking_agent in incoming_all_messages[agent_name][target_agent]:
+
+                        message = incoming_all_messages[agent_name][target_agent][talking_agent]
+                    else:
+                        # Handle the case where the key doesn't exist
+                        # This could be a default value or a special indicator
+                        message = None  # or some default value
+
+                    incoming_messages.append(message)
+                
+                past = 10
+                agents = len(self.agents)
+                if(talking_agent not in curr_agent.last_messages):
+                    curr_agent.last_messages[talking_agent] = [None]*(agents*(past-1))
+                
+                curr_agent.last_messages[talking_agent].extend(incoming_messages)
+                if(len(curr_agent.last_messages[talking_agent]) > agents*past):
+                    for i in range(agents):
+                        curr_agent.last_messages[talking_agent].pop(0)
+                
+                #print(curr_agent.last_messages[talking_agent])
+                
+            #print(agent_name)
+
+        for agent_name in self.agents:
+            #print(agent_name)
+            curr_agent = self.world.get_agent(agent_name)
+            curr_agent.truthful_weights = []
+            #print(self.agents)
+            for target_agent in self.agents:
+                example_input = curr_agent.last_messages[target_agent]
+                # Check if example_input is not a list with all None elements
+                #print(example_input)
+                valid_intervals = all(any(x is not None for x in example_input[i:i+9]) for i in range(0, len(example_input), 9))
+                if valid_intervals:
+                    # Determine the label based on the target_argent's name
+                    label = 0 if target_agent in ['adversarial_0', 'adversarial_1', 'adversarial_2', 'adversarial_3'] else 1
+                    # Append example input and label to a txt file
+                    #with open('data.txt', 'a') as file:
+                        #file.write(f"{example_input}*{label}\n")
+                
+                processed_input = preprocess_input(example_input)
+                prob_adversarial = curr_agent.model.predict_proba([processed_input])
+                curr_agent.truthful_weights.append(prob_adversarial[0])
+            print(curr_agent.truthful_weights)
         return incoming_all_messages
 
     def initialize_beliefs(self):
@@ -270,6 +328,12 @@ class nepiada(ParallelEnv):
         self.observations = self.get_observations()
 
         self.initialize_beliefs()
+
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for target_argent in self.agents:
+                curr_agent.truthful_weights.append(1)
+           #print(curr_agent.truthful_weights)
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
         return self.observations, self.infos
