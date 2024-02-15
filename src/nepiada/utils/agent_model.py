@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import random
 import pickle
 
-k = 10  # Number of repetitions per agent
+k = 2  # Number of repetitions per agent
 
 def preprocess_input(input_data):
     processed_data = []
@@ -42,8 +42,13 @@ num_agents = 9     # Number of agents per sample
 X, y = generate_synthetic_data(num_samples, num_agents)
 
 # Split the data into training and testing sets
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+#agent_model = AgentModel()
+#agent_model.train(X, y)
+
+#with open('agent_model_2.pkl', 'wb') as file:
+#    pickle.dump(agent_model.model, file)
 
 def load_data_from_file(file_name):
     X, y = [], []
@@ -59,8 +64,11 @@ def load_data_from_file(file_name):
     return np.array(X), np.array(y)
 
 # Load and preprocess the data from the file
+"""
 file_name = '../tester/data.txt'
 X, y = load_data_from_file(file_name)
+
+"""
 sum, sum1 = 0,0
 if __name__ == "__main__":
     # Fit the model with this data
@@ -79,7 +87,7 @@ if __name__ == "__main__":
         processed_input = preprocess_input(example_input)
         prob_adversarial = agent_model.predict_proba([processed_input])
         sum += prob_adversarial[0]
-        fake = [(random.uniform(0, 20), random.uniform(0, 20))]*90
+        fake = [(random.uniform(0, 20), random.uniform(0, 20))]*18
         processed_input = preprocess_input(fake)
         prob_adversarial = agent_model.predict_proba([processed_input])
         sum1 += prob_adversarial[0]
