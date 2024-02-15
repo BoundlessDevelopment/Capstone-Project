@@ -57,8 +57,8 @@ class Agent(Entity):  # properties of agent entities
         file_name = '../tester/data.txt'
         X, y = load_data_from_file(file_name)
 
-        self.model = AgentModel()
-        self.model.train(X, y)
+        #self.model = AgentModel()
+        #self.model.train(X, y)
 
 
 
