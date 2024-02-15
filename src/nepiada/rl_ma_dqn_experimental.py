@@ -1,7 +1,10 @@
 import ray
+from ray.rllib.evaluation import RolloutWorker
+from ray.rllib.policy.sample_batch import SampleBatch
 import supersuit as ss
 from ray import tune, air, train
 from ray.rllib.algorithms.dqn.dqn import DQNConfig
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.algorithms import Algorithm
 from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
@@ -10,6 +13,19 @@ from ray.tune.registry import register_env
 import env.nepiada as nepiada
 from utils.config import Config
 
+class NepiadaCallbacks(DefaultCallbacks):
+    def __init__(self):
+        super().__init__()
+    
+    def on_sample_end(self, *, worker: RolloutWorker, samples: SampleBatch, **kwargs) -> None:
+        # Get current epsilon for all agents
+        agent_epsilons = ""
+        for curr_agent_name in worker.env.get_agent_ids():
+            curr_epsilon = worker.policy_map[curr_agent_name].get_exploration_state()["cur_epsilon"]
+            curr_timestep = worker.policy_map[curr_agent_name].get_exploration_state()["last_timestep"]
+            agent_epsilons += f"{curr_agent_name}: {str(curr_epsilon)} | {str(curr_timestep)} || "
+
+        print(f"DQN Rollout | Epsilons: {agent_epsilons}")
 
 def env_creator(args):
     nepiada_config = Config()
@@ -34,22 +50,33 @@ if __name__ == "__main__":
             "prioritized_replay_eps": 3e-6,
         }
 
-    config = config.training(replay_buffer_config=replay_config, num_atoms=tune.grid_search([1,]))
+    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.99)
     config = config.resources(num_gpus=1)
-    config = config.rollouts(num_rollout_workers=11)
+    config = config.rollouts(num_rollout_workers=11, compress_observations=True)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-   # config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 10000})
+    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 150000})
+    config = config.callbacks(NepiadaCallbacks)
 
-    # algo = DQN(config=config)
-    # algo.train()
+    ### TRAINING ####
+    agents_env = env.get_agent_ids()
+    algo = DQN(config=config)
+    best_reward_mean = -1000
+    for i in range(10000):
+        result = algo.train()
+        agent_epsilons = ""
+        if result["episode_reward_mean"] > best_reward_mean:
+            print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
+            best_reward_mean = result["episode_reward_mean"]
+            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Feb15_2/" + str(i) + "_" + str(result["episode_reward_mean"]))
+            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
 
-    stop = {"episodes_total": 60000}
-    tune.Tuner(
-        "DQN",
-        run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
-        param_space=config
-    ).fit()
+    # stop = {"episodes_total": 60000}
+    # tune.Tuner(
+    #     "DQN",
+    #     run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
+    #     param_space=config
+    # ).fit()
 
     # test_config = DQNConfig()
     # test_config = test_config.rollouts(num_rollout_workers=0)
