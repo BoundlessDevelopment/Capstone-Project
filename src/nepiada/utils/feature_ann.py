@@ -1,5 +1,7 @@
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score
 
 def calculate(data):
     n_agents = 9  # Number of agents
@@ -42,19 +44,19 @@ file_name = '../tester/data_2_1.txt'  # Update this to the file you want to use
 # Load data and labels
 X, true_labels = load_data_and_labels_from_file(file_name)
 
-# Apply K-Means with 2 clusters
-kmeans = KMeans(n_clusters=2, random_state=42)
-kmeans.fit(X.reshape(-1, 1))
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, true_labels, test_size=0.3, random_state=42)
 
-# Predict clusters
-predicted_labels = kmeans.predict(X.reshape(-1, 1))
+# Train a Logistic Regression model
+model = LogisticRegression()
+model.fit(X_train.reshape(-1, 1), y_train)
 
-# Counting the labels in each cluster
-labels_in_cluster_0 = np.bincount(true_labels[predicted_labels == 0], minlength=2)
-labels_in_cluster_1 = np.bincount(true_labels[predicted_labels == 1], minlength=2)
+# Make predictions on the test set
+predictions = model.predict(X_test.reshape(-1, 1))
 
-# Print label counts per cluster
-print(f"Label 0's in Cluster 0: {labels_in_cluster_0[0]}")
-print(f"Label 1's in Cluster 0: {labels_in_cluster_0[1]}")
-print(f"Label 0's in Cluster 1: {labels_in_cluster_1[0]}")
-print(f"Label 1's in Cluster 1: {labels_in_cluster_1[1]}")
+# Evaluate the model
+accuracy = accuracy_score(y_test, predictions)
+report = classification_report(y_test, predictions)
+
+print("Model Accuracy:", accuracy)
+print("Classification Report:\n", report)

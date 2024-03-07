@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
 
 def calculate(data):
     n_agents = 9  # Number of agents
@@ -43,15 +42,11 @@ file_name = '../tester/data_2_1.txt'  # Update this to the file you want to use
 # Load data and labels
 X, true_labels = load_data_and_labels_from_file(file_name)
 
-# Normalize the data
-scaler = StandardScaler()
-X_normalized = scaler.fit_transform(X.reshape(-1, 1))
-
-# Plotting the data on separate number lines for each label
+# Plotting the data on separate number lines for each label without normalization
 plt.figure(figsize=(10, 6))
 for i, label in enumerate(np.unique(true_labels)):
-    plt.scatter(X_normalized[true_labels == label], np.full(sum(true_labels == label), i), alpha=0.5, label=f'Label {label}')
-plt.xlabel('Normalized Score')
+    plt.scatter(X[true_labels == label], np.full(sum(true_labels == label), i), alpha=0.5, label=f'Label {label}')
+plt.xlabel('Score')
 plt.yticks([0, 1], ['Label 0', 'Label 1'])
 plt.title('Color-Coded Scatterplot by Label on Separate Number Lines')
 plt.legend()
