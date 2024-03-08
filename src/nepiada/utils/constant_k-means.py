@@ -33,7 +33,7 @@ def load_data_and_labels_from_file(file_name):
             example_input_str, label_str = line.strip().split('*')
             label = int(label_str)
             labels.append(label)
-            if label == 0 and random.random() < 1.0:  # 50% probability for label 0
+            if label == 0 and random.random() < 0.5:  # 50% probability for label 0
                 example_input = [(1, 1)] * 18  # Replace with all (1,1)
             else:
                 example_input = eval(example_input_str)
@@ -47,8 +47,8 @@ file_name = '../tester/data_10.txt'  # Update this to the file you want to use
 # Load data and labels
 X, true_labels = load_data_and_labels_from_file(file_name)
 
-# Apply K-Means with 2 clusters
-kmeans = KMeans(n_clusters=2, random_state=42)
+# Apply K-Means with 3 clusters
+kmeans = KMeans(n_clusters=3, random_state=42)
 kmeans.fit(X.reshape(-1, 1))
 
 # Predict clusters
@@ -57,9 +57,12 @@ predicted_labels = kmeans.predict(X.reshape(-1, 1))
 # Counting the labels in each cluster
 labels_in_cluster_0 = np.bincount(true_labels[predicted_labels == 0], minlength=2)
 labels_in_cluster_1 = np.bincount(true_labels[predicted_labels == 1], minlength=2)
+labels_in_cluster_2 = np.bincount(true_labels[predicted_labels == 2], minlength=2)  # For the third cluster
 
 # Print label counts per cluster
 print(f"Label 0's in Cluster 0: {labels_in_cluster_0[0]}")
 print(f"Label 1's in Cluster 0: {labels_in_cluster_0[1]}")
 print(f"Label 0's in Cluster 1: {labels_in_cluster_1[0]}")
 print(f"Label 1's in Cluster 1: {labels_in_cluster_1[1]}")
+print(f"Label 0's in Cluster 2: {labels_in_cluster_2[0]}")  # New
+print(f"Label 1's in Cluster 2: {labels_in_cluster_2[1]}")  # New

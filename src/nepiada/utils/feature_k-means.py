@@ -11,13 +11,15 @@ def calculate(data):
     valid_agents_count = 0
 
     for i in range(n_agents):
-        update1 = data[i]
-        update2 = data[i + n_agents] if i + n_agents < len(data) else None
-
-        if update1 is not None and update2 is not None:
-            range_x = abs(update2[0] - update1[0])
-            range_y = abs(update2[1] - update1[1])
-            avg_range = (range_x + range_y) / 2
+        updates = [data[j] for j in range(i, len(data), n_agents)]  # Get all updates for the agent
+        if all(update is not None for update in updates):  # Check if all updates are non-None
+            # Calculate range for each pair of updates and average them
+            ranges = []
+            for k in range(len(updates) - 1):
+                range_x = abs(updates[k+1][0] - updates[k][0])
+                range_y = abs(updates[k+1][1] - updates[k][1])
+                ranges.append((range_x + range_y) / 2)
+            avg_range = sum(ranges) / len(ranges)
             sum_ranges += avg_range
             valid_agents_count += 1
 
