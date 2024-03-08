@@ -25,20 +25,17 @@ def calculate(data):
 def preprocess_input(input_data):
     return calculate(input_data)
 
+# Function to load data from file
 def load_data_and_labels_from_file(file_name):
     X = []
     labels = []
     with open(file_name, 'r') as file:
         for line in file:
             example_input_str, label_str = line.strip().split('*')
-            label = int(label_str)
-            labels.append(label)
-            if label == 0 and random.random() < 1.0:  # 50% probability for label 0
-                example_input = [(1, 1)] * 18  # Replace with all (1,1)
-            else:
-                example_input = eval(example_input_str)
+            example_input = eval(example_input_str)
             processed_input = preprocess_input(example_input)
             X.append(processed_input)
+            labels.append(int(label_str))
     return np.array(X), np.array(labels)
 
 # File name

@@ -1,0 +1,81 @@
+import numpy as np
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import accuracy_score
+
+def calculate(data):
+    n_agents = 9
+    sum_ranges = 0
+    valid_agents_count = 0
+
+    for i in range(n_agents):
+        updates = [data[j] for j in range(i, len(data), n_agents)]
+        if all(update is not None for update in updates):
+            ranges = []
+            for k in range(len(updates) - 1):
+                range_x = abs(updates[k+1][0] - updates[k][0])
+                range_y = abs(updates[k+1][1] - updates[k][1])
+                ranges.append((range_x + range_y) / 2)
+            avg_range = sum(ranges) / len(ranges)
+            sum_ranges += avg_range
+            valid_agents_count += 1
+
+    return sum_ranges / valid_agents_count if valid_agents_count > 0 else 0
+
+def preprocess_input(input_data):
+    return calculate(input_data)
+
+def load_data_and_labels_from_file(file_name):
+    X = []
+    labels = []
+    with open(file_name, 'r') as file:
+        for line in file:
+            example_input_str, label_str = line.strip().split('*')
+            example_input = eval(example_input_str)
+            processed_input = preprocess_input(example_input)
+            X.append(processed_input)
+            labels.append(int(label_str))
+    return np.array(X), np.array(labels)
+
+def predict_label(data_point, model):
+    predicted_cluster = model.predict(data_point.reshape(-1, 1))[0]
+    return predicted_cluster
+
+# File name
+file_name = '../tester/data_10.txt'  # Update this to the file you want to use
+
+# Load data and labels
+X, true_labels = load_data_and_labels_from_file(file_name)
+
+# Initialize MiniBatchKMeans with 2 clusters
+kmeans = MiniBatchKMeans(n_clusters=2, random_state=42)
+
+# Process the initial batch
+initial_batch_size = 2  # Set the size of the initial batch
+batch_data = X[:initial_batch_size]  # Take the first few data points for the initial batch
+kmeans.partial_fit(np.array(batch_data).reshape(-1, 1))
+
+# Initialize the list to store predicted labels
+predicted_labels = []
+
+# Predict labels for the initial batch
+for data_point in batch_data:
+    predicted_label = predict_label(data_point.reshape(-1, 1), kmeans)
+    predicted_labels.append(predicted_label)
+
+# Process each subsequent data point one by one
+for i in range(initial_batch_size, len(X)):
+    data_point = X[i].reshape(-1, 1)
+
+    # Update the model with the new data point
+    kmeans.partial_fit(data_point)
+
+    # Predict the cluster for the updated model
+    predicted_label = predict_label(data_point, kmeans)
+    predicted_labels.append(predicted_label)
+
+    # Print progress
+    print(f"Processed data point {i + 1} of {len(X)}, Predicted label: {predicted_label}")
+
+# Calculate the accuracy
+accuracy = accuracy_score(true_labels, predicted_labels)
+print(f"Classification Accuracy: {accuracy * 100:.2f}%")
