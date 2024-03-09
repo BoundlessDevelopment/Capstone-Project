@@ -18,6 +18,7 @@ import os
 import matplotlib.pyplot as plt
 
 from utils.agent_model import *
+from utils.online_k import *
 
 def parallel_env(config: Config):
     """
@@ -201,7 +202,7 @@ class nepiada(ParallelEnv):
 
                     incoming_messages.append(message)
                 
-                past = 10
+                past = 5
                 agents = len(self.agents)
                 if(talking_agent not in curr_agent.last_messages):
                     curr_agent.last_messages[talking_agent] = [None]*(agents*(past-1))
@@ -226,15 +227,19 @@ class nepiada(ParallelEnv):
                 #print(example_input)
                 valid_intervals = all(any(x is not None for x in example_input[i:i+9]) for i in range(0, len(example_input), 9))
                 if valid_intervals:
-                    # Determine the label based on the target_argent's name
-                    label = 0 if target_agent in ['adversarial_0', 'adversarial_1', 'adversarial_2', 'adversarial_3'] else 1
+                    # Determine the label based on the target_agent's name
+                    #label = 0 if 'adversarial' in target_agent else 1
                     # Append example input and label to a txt file
-                    #with open('data.txt', 'a') as file:
-                        #file.write(f"{example_input}*{label}\n")
-                
-                processed_input = preprocess_input(example_input)
-                prob_adversarial = curr_agent.model.predict_proba([processed_input])
-                curr_agent.truthful_weights.append(prob_adversarial[0])
+                    #with open('data_1_5.txt', 'a') as file:
+                    #    file.write(f"{example_input}*{label}\n")
+                    data_point = np.array([calculate(example_input)])
+                    #curr_agent.model.partial_fit(processed_input.reshape(-1, 1))
+                    curr_agent.model.partial_fit(data_point.reshape(-1, 1))
+                    predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
+                    #prob_adversarial = curr_agent.model.predict_proba([processed_input])
+                    curr_agent.truthful_weights.append(predicted_cluster)
+                else:
+                    curr_agent.truthful_weights.append(0.5)
             print(curr_agent.truthful_weights)
         return incoming_all_messages
 

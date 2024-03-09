@@ -4,7 +4,7 @@ from enum import Enum
 from utils.config import Config
 from .agent_model import *  # Import the AgentModel
 import pickle
-
+from sklearn.cluster import MiniBatchKMeans
 
 # Types of agents
 class AgentType(Enum):
@@ -54,10 +54,12 @@ class Agent(Entity):  # properties of agent entities
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
 
-        file_name = '../tester/data.txt'
-        X, y = load_data_from_file(file_name)
+        #file_name = '../tester/data.txt'
+        #X, y = load_data_from_file(file_name)
 
-        #self.model = AgentModel()
+        self.model = MiniBatchKMeans(n_clusters=2, random_state=42)
+        dummy_inputs = np.array([1, 0])  # Adjust these values as needed
+        self.model.partial_fit(dummy_inputs.reshape(-1, 1))
         #self.model.train(X, y)
 
 

@@ -6,10 +6,11 @@ def calculate(data):
     n_agents = 9
     sum_ranges = 0
     valid_agents_count = 0
-
+    #print(data)
     for i in range(n_agents):
-        updates = [data[j] for j in range(i, len(data), n_agents)]
-        if all(update is not None for update in updates):
+        updates = [data[j] for j in range(i, len(data), n_agents)]  # Get all updates for the agent
+        if all(update is not None for update in updates):  # Check if all updates are non-None
+            # Calculate range for each pair of updates and average them
             ranges = []
             for k in range(len(updates) - 1):
                 range_x = abs(updates[k+1][0] - updates[k][0])
@@ -20,6 +21,7 @@ def calculate(data):
             valid_agents_count += 1
 
     return sum_ranges / valid_agents_count if valid_agents_count > 0 else 0
+
 
 def preprocess_input(input_data):
     return calculate(input_data)
@@ -40,42 +42,37 @@ def predict_label(data_point, model):
     predicted_cluster = model.predict(data_point.reshape(-1, 1))[0]
     return predicted_cluster
 
-# File name
-file_name = '../tester/data_10.txt'  # Update this to the file you want to use
+if __name__ == "__main__":
+    # File name
+    file_name = '../tester/data_10_1.txt'  # Update this to the file you want to use
 
-# Load data and labels
-X, true_labels = load_data_and_labels_from_file(file_name)
+    # Load data and labels
+    X, true_labels = load_data_and_labels_from_file(file_name)
 
-# Initialize MiniBatchKMeans with 2 clusters
-kmeans = MiniBatchKMeans(n_clusters=2, random_state=42)
+    # Initialize MiniBatchKMeans with 2 clusters
+    kmeans = MiniBatchKMeans(n_clusters=2, random_state=42)
 
-# Process the initial batch
-initial_batch_size = 2  # Set the size of the initial batch
-batch_data = X[:initial_batch_size]  # Take the first few data points for the initial batch
-kmeans.partial_fit(np.array(batch_data).reshape(-1, 1))
+    # Use two dummy inputs for initial fitting
+    dummy_inputs = np.array([1, 0])  # Adjust these values as needed
+    kmeans.partial_fit(dummy_inputs.reshape(-1, 1))
 
-# Initialize the list to store predicted labels
-predicted_labels = []
+    # Initialize the list to store predicted labels
+    predicted_labels = []
 
-# Predict labels for the initial batch
-for data_point in batch_data:
-    predicted_label = predict_label(data_point.reshape(-1, 1), kmeans)
-    predicted_labels.append(predicted_label)
+    # Process each data point one by one
+    for i in range(len(X)):
+        data_point = X[i].reshape(-1, 1)
 
-# Process each subsequent data point one by one
-for i in range(initial_batch_size, len(X)):
-    data_point = X[i].reshape(-1, 1)
+        # Update the model with the new data point
+        kmeans.partial_fit(data_point)
 
-    # Update the model with the new data point
-    kmeans.partial_fit(data_point)
+        # Predict the cluster for the updated model
+        predicted_label = predict_label(data_point, kmeans)
+        predicted_labels.append(predicted_label)
 
-    # Predict the cluster for the updated model
-    predicted_label = predict_label(data_point, kmeans)
-    predicted_labels.append(predicted_label)
+        # Print progress
+        print(f"Processed data point {i + 1} of {len(X)}, Predicted label: {predicted_label}")
 
-    # Print progress
-    print(f"Processed data point {i + 1} of {len(X)}, Predicted label: {predicted_label}")
-
-# Calculate the accuracy
-accuracy = accuracy_score(true_labels, predicted_labels)
-print(f"Classification Accuracy: {accuracy * 100:.2f}%")
+    # Calculate the accuracy
+    accuracy = accuracy_score(true_labels, predicted_labels)
+    print(f"Classification Accuracy: {accuracy * 100:.2f}%")
