@@ -239,7 +239,10 @@ class nepiada(ParallelEnv):
                     #prob_adversarial = curr_agent.model.predict_proba([processed_input])
                     curr_agent.truthful_weights.append(predicted_cluster)
                 else:
-                    curr_agent.truthful_weights.append(0.5)
+                    curr_agent.truthful_weights.append(0.5) #update with midpoint 0.5 when unsure 
+            for i in range(len(curr_agent.truthful_weights)):
+                if curr_agent.truthful_weights[i] == 0:
+                    curr_agent.truthful_weights[i] = 0.1
             print(curr_agent.truthful_weights)
         return incoming_all_messages
 

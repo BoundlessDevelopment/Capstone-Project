@@ -179,6 +179,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
     # Incoming messages should never be None after the first step
 
     if "incoming_messages" in infos:
+        """
         strip_extreme_values_and_update_beliefs(
             config.D,
             infos["incoming_messages"],
@@ -187,7 +188,8 @@ def step(agent_name, agent_instance, observations, infos, env, config):
             agent_name,
             env.agents,
         )
-        #weighted_beliefs(infos["incoming_messages"], new_beliefs, agent_name, env.agents, agent_instance)
+        """
+        weighted_beliefs(infos["incoming_messages"], new_beliefs, agent_name, env.agents, agent_instance)
 
     # Calculate the cost for every possible action
     action_costs = {}
