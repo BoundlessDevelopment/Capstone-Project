@@ -67,9 +67,14 @@ if __name__ == "__main__":
         result = algo.train()
         print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
         iterations_since_last_checkpoint += 1
-        if result["episode_reward_mean"] > best_reward_mean or iterations_since_last_checkpoint >= 50:
+        if result["episode_reward_mean"] > best_reward_mean:
             print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
             best_reward_mean = result["episode_reward_mean"]
+            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Mar10_LocalReward_1/" + str(i) + "_" + str(result["episode_reward_mean"]))
+            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+            iterations_since_last_checkpoint = 0
+        elif iterations_since_last_checkpoint > 50:
+            print("Iterations since last checkpoint exceeded threshold | Saving checkpoint...")
             checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Mar10_LocalReward_1/" + str(i) + "_" + str(result["episode_reward_mean"]))
             print("Checkpoint saved at: ", checkpoint.checkpoint.path)
             iterations_since_last_checkpoint = 0
