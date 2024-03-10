@@ -50,26 +50,29 @@ if __name__ == "__main__":
             "prioritized_replay_eps": 3e-6,
         }
 
-    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.99)
+    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.5)
     config = config.resources(num_gpus=1)
     config = config.rollouts(num_rollout_workers=11, compress_observations=True)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 100000})
-  #  config = config.callbacks(NepiadaCallbacks)
+    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 60000})
+    config = config.callbacks(NepiadaCallbacks)
 
-    ### TRAINING ####
+    ### TRAINING #####
     agents_env = env.get_agent_ids()
     algo = DQN(config=config)
-    best_reward_mean = -1000
+    best_reward_mean = -1000000
+    iterations_since_last_checkpoint = 0
     for i in range(10000):
         result = algo.train()
         print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
-        if result["episode_reward_mean"] > best_reward_mean:
+        iterations_since_last_checkpoint += 1
+        if result["episode_reward_mean"] > best_reward_mean or iterations_since_last_checkpoint >= 50:
             print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
             best_reward_mean = result["episode_reward_mean"]
-            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Feb15_2/" + str(i) + "_" + str(result["episode_reward_mean"]))
+            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/DQN_Mar10_LocalReward_1/" + str(i) + "_" + str(result["episode_reward_mean"]))
             print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+            iterations_since_last_checkpoint = 0
 
     # stop = {"episodes_total": 60000}
     # tune.Tuner(
@@ -78,10 +81,23 @@ if __name__ == "__main__":
     #     param_space=config
     # ).fit()
 
-    # test_config = DQNConfig()
-    # test_config = test_config.rollouts(num_rollout_workers=0)
-    # test_config = test_config.environment("nepiada")
-    # test_config = test_config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
+    #### EVALUATION ####
+
+    # algo = DQN(config=config)
+    # algo.restore("C:/Users/thano/ray_results/DQN_Feb15_2/51_92.0449012618013")
+    
+    # test_env_config = Config()
+    # test_env = nepiada.parallel_env(config=test_env_config)
+
+    # observations, infos = test_env.reset()
+    # while test_env.agents:
+    #     actions = {}
+    #     for curr_agent_name in test_env.agents:
+    #         actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
+    #     print(actions)
+    #     observations, rewards, terminations, truncations, infos = test_env.step(actions)
+    #     test_env.render()
+    # test_env.close()
 
     # algo = DQN(config=test_config)
     # algo.restore("C:/Users/thano/ray_results/DQN_2024-02-02_14-29-18/DQN_nepiada_5c7b1_00000_0_num_atoms=1_2024-02-02_14-29-19/checkpoint_000005")
