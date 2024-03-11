@@ -37,10 +37,10 @@ class Config:
     pass_agents_in_infos: bool = False
 
     # Agent related parameterss
-    agent_grid_width: int = 2
-    agent_grid_height: int = 2
-    num_good_agents: int = 3
-    num_adversarial_agents: int = 1
+    agent_grid_width: int = 3
+    agent_grid_height: int = 3
+    num_good_agents: int = 4
+    num_adversarial_agents: int = 5
 
     # Graph update parameters
     dynamic_obs: bool = True
