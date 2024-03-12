@@ -347,7 +347,10 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             agent = self.world.get_agent(agent_name)
             for target_agent_name in self.agents:
-                beliefs[target_agent_name] = np.array([np.random.randint(self.config.size), np.random.randint(self.config.size)])
+                if (target_agent_name == agent_name):
+                    agent.beliefs[target_agent_name] = np.array(agent.p_pos, dtype=np.float32)
+                else:
+                    agent.beliefs[target_agent_name] = np.array([np.random.randint(self.config.size), np.random.randint(self.config.size)], dtype=np.float32)
 
     def _reset_agent_pos(self):
         for agent_name in self.agents:
