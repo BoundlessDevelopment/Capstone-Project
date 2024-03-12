@@ -284,6 +284,8 @@ class nepiada(ParallelEnv):
                 final_beliefs.append(beliefs[agent_name][other_agent_name])
             
             observation["beliefs"] = np.array(final_beliefs, dtype=np.float32)
+            # Clip the beliefs to be within the grid
+            observation["beliefs"] = np.clip(observation["beliefs"], 0, self.config.size + 1)
             observations[agent_name] = observation
 
         # Sanity Check

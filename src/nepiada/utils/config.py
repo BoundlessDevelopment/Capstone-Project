@@ -38,16 +38,16 @@ class Config:
 
     # Agent related parameterss
     agent_grid_width: int = 3
-    agent_grid_height: int = 3
-    num_good_agents: int = 4
-    num_adversarial_agents: int = 5
+    agent_grid_height: int = 2
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 3
 
     # Graph update parameters
     dynamic_obs: bool = True
     obs_radius: int = 5
     dynamic_comms: bool = True
-    dynamic_comms_radius: int = 10
-    dynamic_comms_enforce_minimum: int = 1
+    dynamic_comms_radius: int = 15
+    dynamic_comms_enforce_minimum: int = 2
     noise = GaussianNoise()
 
     # Agent update parameters
