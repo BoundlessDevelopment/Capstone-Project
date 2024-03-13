@@ -83,6 +83,9 @@ class nepiada(ParallelEnv):
         """
         return Dict(
             {
+                "target_neighbours": Box(
+                    low=-self.config.size, high=self.config.size, shape=(self.total_agents, 2), dtype=np.float32
+                ),
                 "beliefs": Box(
                     low=0,
                     high=self.config.size + 1,
@@ -286,6 +289,9 @@ class nepiada(ParallelEnv):
             observation["beliefs"] = np.array(final_beliefs, dtype=np.float32)
             # Clip the beliefs to be within the grid
             observation["beliefs"] = np.clip(observation["beliefs"], 0, self.config.size + 1)
+
+            # Store the target neighbours
+            observation["target_neighbours"] = self.obs_target_neighbours[agent_name]
             observations[agent_name] = observation
 
         # Sanity Check
@@ -397,6 +403,21 @@ class nepiada(ParallelEnv):
         plt.savefig(f"{self.config.simulation_dir}/all_traj.png")
         plt.close()  # Close the plot to free up memory
 
+    def _set_obs_target_neighbours(self):
+        # Populate a list of target neighbours for each agent, if there isn't a neighbour relationship, set distance as [0, 0],
+        # otherwise set the distance as the relative distance between the two agents
+        obs_target_neighbours = {}
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            target_neighs = []
+            for other_agent_name in self.agents:
+                if other_agent_name not in agent.target_neighbour:
+                    target_neighs.append([0, 0])
+                else:
+                    target_neighs.append(agent.target_neighbour[other_agent_name])
+            obs_target_neighbours[agent_name] = np.array(target_neighs, dtype=np.float32)
+        return obs_target_neighbours
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -436,6 +457,9 @@ class nepiada(ParallelEnv):
 
         # Infos is used to pass aditional information
         self.infos = {agent: {} for agent in self.agents}
+
+        # Store the target neighbours for each agent
+        self.obs_target_neighbours = self._set_obs_target_neighbours()
 
         # Initialize the infos with the agent instances, so the algorithm can access agent beliefs.
         if (self.config.pass_agents_in_infos):

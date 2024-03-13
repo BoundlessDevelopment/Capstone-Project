@@ -47,7 +47,7 @@ class Config:
     obs_radius: int = 5
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
-    dynamic_comms_enforce_minimum: int = 2
+    dynamic_comms_enforce_minimum: int = 3
     noise = GaussianNoise()
 
     # Agent update parameters

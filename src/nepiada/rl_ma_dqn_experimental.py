@@ -50,12 +50,12 @@ if __name__ == "__main__":
             "prioritized_replay_eps": 3e-6,
         }
 
-    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.5)
+    config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.5, lr=0.0005)
     config = config.resources(num_gpus=1)
     config = config.rollouts(num_rollout_workers=15, rollout_fragment_length=100, compress_observations=True)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
-    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 100000})
+    config = config.exploration(explore=True, exploration_config={"type": "EpsilonGreedy", "initial_epsilon": 1.0, "final_epsilon": 0.01, "epsilon_timesteps": 1000000})
     config = config.callbacks(NepiadaCallbacks)
 
     ## TRAINING #####
