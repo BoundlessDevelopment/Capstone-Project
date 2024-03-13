@@ -83,6 +83,9 @@ class nepiada(ParallelEnv):
         """
         return Dict(
             {
+                "target_neighbours": Box(
+                    low=-self.config.size, high=self.config.size, shape=(self.total_agents, 2), dtype=np.float32
+                ),
                 "beliefs": Box(
                     low=0,
                     high=self.config.size + 1,
@@ -284,6 +287,11 @@ class nepiada(ParallelEnv):
                 final_beliefs.append(beliefs[agent_name][other_agent_name])
             
             observation["beliefs"] = np.array(final_beliefs, dtype=np.float32)
+            # Clip the beliefs to be within the grid
+            observation["beliefs"] = np.clip(observation["beliefs"], 0, self.config.size + 1)
+
+            # Store the target neighbours
+            observation["target_neighbours"] = self.obs_target_neighbours[agent_name]
             observations[agent_name] = observation
 
         # Sanity Check
@@ -395,6 +403,21 @@ class nepiada(ParallelEnv):
         plt.savefig(f"{self.config.simulation_dir}/all_traj.png")
         plt.close()  # Close the plot to free up memory
 
+    def _set_obs_target_neighbours(self):
+        # Populate a list of target neighbours for each agent, if there isn't a neighbour relationship, set distance as [0, 0],
+        # otherwise set the distance as the relative distance between the two agents
+        obs_target_neighbours = {}
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            target_neighs = []
+            for other_agent_name in self.agents:
+                if other_agent_name not in agent.target_neighbour:
+                    target_neighs.append([0, 0])
+                else:
+                    target_neighs.append(agent.target_neighbour[other_agent_name])
+            obs_target_neighbours[agent_name] = np.array(target_neighs, dtype=np.float32)
+        return obs_target_neighbours
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -435,6 +458,9 @@ class nepiada(ParallelEnv):
         # Infos is used to pass aditional information
         self.infos = {agent: {} for agent in self.agents}
 
+        # Store the target neighbours for each agent
+        self.obs_target_neighbours = self._set_obs_target_neighbours()
+
         # Initialize the infos with the agent instances, so the algorithm can access agent beliefs.
         if (self.config.pass_agents_in_infos):
             self.initialize_infos_with_agents()
@@ -448,7 +474,7 @@ class nepiada(ParallelEnv):
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
         self.observations = self.get_observations(self.incoming_msgs)
 
-        #TODO Add a one line description
+        # Store the minimum score seen so far, may or may not be used in rewards depending on the function in use.
         self.min_score = min(scores.values())
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
@@ -501,7 +527,12 @@ class nepiada(ParallelEnv):
         # For incomming messages
         self.incoming_msgs = {agent: {} for agent in self.agents}
 
-        # Update the incoming messages based on the communication graph
+        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
+        # self.infos = {agent_name: {} for agent_name in self.agents}
+        
+        # For incomming messages
+        self.incoming_msgs = {agent: {} for agent in self.agents}
+
         incoming_all_messages = self.get_all_messages()
         for agent_name in self.agents: 
             self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
@@ -509,7 +540,6 @@ class nepiada(ParallelEnv):
         # if self.render_mode == "human":
         #     self.render()
 
-        # Update the agent beliefs
         self.observations = self.get_observations(self.incoming_msgs)
         return self.observations, self.rewards, terminations, truncations, self.infos
 
@@ -529,7 +559,8 @@ class nepiada(ParallelEnv):
             elif status == -1:
                 # Drone collided with boundary
                 # THANOS EXPERIMENTAL - Large negative reward will be given on instance.
-                self.world.agents[agent_name].prev_score = -self.world.agents[agent_name].prev_score
+                #self.world.agents[agent_name].prev_score = -self.world.agents[agent_name].prev_score
+                pass
 
         if collided_drones:
             assert (
@@ -537,7 +568,19 @@ class nepiada(ParallelEnv):
             ), "We should be allowing for multiple drones to occupy the same position"
 
     ## THANOS EXPERIMENTAL
+    ## Rewards - Default
     def get_rewards(self):
+        rewards = {}
+        curr_scores = self._compute_scores()
+
+        for agent_name in self.agents:
+            rewards[agent_name] = curr_scores[agent_name]
+        
+        self._store_scores_in_agent(curr_scores)
+        return rewards
+
+    ## THANOS EXPERIMENTAL
+    def get_rewards_no_delta(self):
         rewards = {}
         curr_scores = self._compute_scores()
     
@@ -547,7 +590,7 @@ class nepiada(ParallelEnv):
             self.min_score = min_r
 
         if min_r == 0:
-            print("NEPIADA WARN: All rewards are the same")
+            print("NEPIADA WARN: All rewards are the same. This should not happen.")
             print(f"NEPIADA INFO: Current Scores: {str(curr_scores)} | Current Rewards: {str(rewards)} | Values: {str(values)}")
 
         for agent_name in self.agents:
@@ -575,7 +618,56 @@ class nepiada(ParallelEnv):
         return rewards
 
     ## THANOS EXPERIMENTAL
+    ## Compute Scores with more local-focused rewards
     def _compute_scores(self):
+        """
+        Compute the scores of the agents based on their distance from the target
+        """
+        scores = {}
+    
+        target_x = self.config.size / 2
+        target_y = self.config.size / 2
+        global_arrangement_vector = np.array([0.0, 0.0])
+
+        # for agent_name in self.agents:
+        #     agent = self.world.agents[agent_name]
+        #     global_arrangement_vector += np.array(
+        #         [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+        #     )
+
+        # global_arrangement_vector = np.divide(
+        #     global_arrangement_vector, len(self.agents)
+        # )
+
+        # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
+        self.world.graph.global_arrangement_vector = global_arrangement_vector
+
+        # Add each agents reward based on their target neighbours
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            agent_x = agent.p_pos[0]
+            agent_y = agent.p_pos[1]
+            deviation_from_arrangement = 0
+            deviation_from_global_arrangement = np.sqrt((agent_x - target_x) ** 2 + (target_y - agent_y) ** 2)
+
+            for neighbour_name, ideal_distance in agent.target_neighbour.items():
+                neighbour = self.world.agents[neighbour_name]
+                neighbour_x = neighbour.p_pos[0]
+                neighbour_y = neighbour.p_pos[1]
+                ideal_x = ideal_distance[0]
+                ideal_y = ideal_distance[1]
+
+                deviation_from_arrangement += np.sqrt(
+                    (neighbour_x - agent_x - ideal_x) ** 2
+                    + (neighbour_y - agent_y - ideal_y) ** 2
+                )
+
+            scores[agent_name] = -((self.config.global_reward_weight * deviation_from_global_arrangement) + (self.config.local_reward_weight * deviation_from_arrangement))
+            
+        return scores
+
+    ## THANOS EXPERIMENTAL
+    def _compute_scores_global(self):
         """
         Compute the scores of the agents based on their distance from the target
         """
@@ -627,63 +719,3 @@ class nepiada(ParallelEnv):
         for agent_name in self.agents:
             self.world.agents[agent_name].prev_score = scores[agent_name]
 
-    # THANOS EXPERIMENTAL
-    # def get_rewards_old(self):
-    #     """
-    #     This function assigns reward to all agents based on the following two criterias:
-
-    #     - global_arrangement_reward : The average distance of all agents from the target
-    #     - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
-
-    #     Refer to D. Gadjov and Pavel's paper for more details about it.
-
-    #     Returns: A dictionary with agent_name as key and reward as a value
-    #     """
-    #     rewards = {}
-
-    #     # Get the average vector distance of the agents from target
-    #     target_x = self.config.size / 2
-    #     target_y = self.config.size / 2
-    #     global_arrangement_vector = np.array([0.0, 0.0])
-
-    #     for agent_name in self.agents:
-    #         agent = self.world.agents[agent_name]
-    #         global_arrangement_vector += np.array(
-    #             [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
-    #         )
-
-    #     global_arrangement_vector = np.divide(
-    #         global_arrangement_vector, len(self.agents)
-    #     )
-    #     global_arrangement_reward = np.sqrt(
-    #         global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2
-    #     )
-
-    #     # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
-    #     self.world.graph.global_arrangement_vector = global_arrangement_vector
-
-    #     # Add each agents reward based on their target neighbours
-    #     for agent_name in self.agents:
-    #         agent = self.world.agents[agent_name]
-    #         agent_x = agent.p_pos[0]
-    #         agent_y = agent.p_pos[1]
-    #         deviation_from_arrangement = 0
-    #         for neighbour_name, ideal_distance in agent.target_neighbour.items():
-    #             neighbour = self.world.agents[neighbour_name]
-    #             neighbour_x = neighbour.p_pos[0]
-    #             neighbour_y = neighbour.p_pos[1]
-    #             ideal_x = ideal_distance[0]
-    #             ideal_y = ideal_distance[1]
-
-    #             deviation_from_arrangement += np.sqrt(
-    #                 (neighbour_x - agent_x - ideal_x) ** 2
-    #                 + (neighbour_y - agent_y - ideal_y) ** 2
-    #             )
-
-    #         # Compute the agent's net reward, note the negative sign
-    #         rewards[agent_name] = -(
-    #             (self.config.global_reward_weight * global_arrangement_reward)
-    #             + (self.config.local_reward_weight * deviation_from_arrangement)
-    #         )
-
-    #     return rewards
