@@ -82,6 +82,8 @@ class UniformNoise(AdversarialNoiseStrategy):
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
     
     def get_name(self):
@@ -105,6 +107,8 @@ class GaussianNoise(AdversarialNoiseStrategy):
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
 
     def get_name(self):
@@ -128,6 +132,8 @@ class LaplacianNoise(AdversarialNoiseStrategy):
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
 
     def get_name(self):
