@@ -18,6 +18,8 @@ from collections import OrderedDict, defaultdict
 import os
 import matplotlib.pyplot as plt
 
+from utils.online_k import *
+
 TYPE_CHECK = True
 
 def parallel_env(config: Config):
@@ -136,6 +138,7 @@ class nepiada(ParallelEnv):
         # Before quiting write out the graphs for each trajectory
         self._dump_pos_graphs()
         pass
+
 
     def strip_extreme_values_and_update_beliefs(
         self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
@@ -344,7 +347,55 @@ class nepiada(ParallelEnv):
 
             incoming_all_messages[agent_name] = incoming_agent_messages
 
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for talking_agent in self.agents:
+                incoming_messages = []
+
+                for target_agent in self.agents:
+                    # Check if the keys exist in the nested dictionary
+                    if agent_name in incoming_all_messages and \
+                    target_agent in incoming_all_messages[agent_name] and \
+                    talking_agent in incoming_all_messages[agent_name][target_agent]:
+
+                        message = incoming_all_messages[agent_name][target_agent][talking_agent]
+                    else:
+                        # Handle the case where the key doesn't exist
+                        # This could be a default value or a special indicator
+                        message = None  # or some default value
+
+                    incoming_messages.append(message)
+
+                past = 5
+                agents = len(self.agents)
+                if(talking_agent not in curr_agent.last_messages):
+                    curr_agent.last_messages[talking_agent] = [None]*(agents*(past-1))
+
+                curr_agent.last_messages[talking_agent].extend(incoming_messages)
+                if(len(curr_agent.last_messages[talking_agent]) > agents*past):
+                    for i in range(agents):
+                        curr_agent.last_messages[talking_agent].pop(0)
+
+        #generate truthful weights based on k-means classification
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            curr_agent.truthful_weights = []
+            for target_agent in self.agents:
+                example_input = curr_agent.last_messages[target_agent]
+                valid_intervals = all(any(x is not None for x in example_input[i:i+9]) for i in range(0, len(example_input), 9))
+                if valid_intervals:
+                    data_point = np.array([calculate(example_input)])
+                    curr_agent.model.partial_fit(data_point.reshape(-1, 1))
+                    predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
+                    curr_agent.truthful_weights.append(predicted_cluster)
+                else:
+                    curr_agent.truthful_weights.append(0.5) #update with midpoint 0.5 when unsure 
+            for i in range(len(curr_agent.truthful_weights)):
+                if curr_agent.truthful_weights[i] == 0:
+                    curr_agent.truthful_weights[i] = 0.1
+            print(curr_agent.truthful_weights)
         return incoming_all_messages
+
 
     def initialize_beliefs(self):
         """
