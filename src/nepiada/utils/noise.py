@@ -144,6 +144,12 @@ class RandomizeData(AdversarialNoiseStrategy):
     The algorithm replaces values with random datapoints. This is not standard noise as we DO NOT add noise to the 
     values, rather we replace the values with random numbers.
     """
+    def __init__(self, max_dim):
+        """
+        Initializes the upper bound of the random data by max_dim
+        """
+        self._max_dim = max_dim
+
     def add_noise(self, data):
         noisy_data = {}
         for key, value in data.items():
@@ -153,7 +159,7 @@ class RandomizeData(AdversarialNoiseStrategy):
                 continue
             if isinstance(value, (np.ndarray, np.generic)):
                 # Add noise to each element in the tuple
-                noisy_data[key] = np.array([np.random.randint(0, 50, size = val.shape) for val in value if val is not None], dtype=np.float32)
+                noisy_data[key] = np.array([np.random.randint(0, self._max_dim, size = val.shape) for val in value if val is not None], dtype=np.float32)
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
