@@ -39,10 +39,13 @@ def calculate_cost(agent_name, target_neighbours, beliefs, grid_size, config):
 
     # Calculate the target neighbour cost
     for curr_agent_name, target_relative_position in target_neighbours.items():
-        assert beliefs[int(agent_name)] is not None
+        assert beliefs[agent_name] is not None
 
-        curr_agent_position = beliefs[int(curr_agent_name)]
-        agent_position = beliefs[int(agent_name)]
+        # FIX: We need an integer to index beliefs so we prune it from the agent name
+        curr_agent_name = int(curr_agent_name[-1:])
+
+        curr_agent_position = beliefs[curr_agent_name]
+        agent_position = beliefs[agent_name]
 
         if curr_agent_position is None:
             continue
@@ -107,8 +110,10 @@ def main(included_data=None):
         actions = {}
         for curr_agent_name in env.agents:
             curr_agent_instance = infos[curr_agent_name]["agent_instance"]
+
             agent_action = step(
-                int(curr_agent_name),
+                # FIX: We need an integer to index beliefs so we prune it from the agent name
+                int(curr_agent_name[-1:]),
                 curr_agent_instance,
                 observations[curr_agent_name]["beliefs"],
                 env,

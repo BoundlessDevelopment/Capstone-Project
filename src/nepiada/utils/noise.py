@@ -71,7 +71,6 @@ class UniformNoise(AdversarialNoiseStrategy):
     """
     def add_noise(self, data):
         noisy_data = {}
-        print(data)
         for key, value in data.items():
             if value is None:
                 # Skip None values or handle them differently if needed
@@ -79,10 +78,12 @@ class UniformNoise(AdversarialNoiseStrategy):
                 continue
             if isinstance(value, (np.ndarray, np.generic)):
                 # Add noise to each element in the tuple
-                noisy_data[key] = np.array([val + np.random.uniform(loc=0, scale=1) for val in value if val is not None], dtype=np.float32)
+                noisy_data[key] = np.array([val + np.random.uniform() for val in value if val is not None], dtype=np.float32)
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
     
     def get_name(self):
@@ -106,6 +107,8 @@ class GaussianNoise(AdversarialNoiseStrategy):
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
 
     def get_name(self):
@@ -129,18 +132,44 @@ class LaplacianNoise(AdversarialNoiseStrategy):
             else:
                 # Optionally handle other non-tuple values or raise an error
                 raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
         return noisy_data
 
     def get_name(self):
         return "Laplacian noise"
 
+class RandomizeData(AdversarialNoiseStrategy):
+    """
+    The algorithm replaces values with random datapoints. This is not standard noise as we DO NOT add noise to the 
+    values, rather we replace the values with random numbers.
+    """
+    def add_noise(self, data):
+        noisy_data = {}
+        for key, value in data.items():
+            if value is None:
+                # Skip None values or handle them differently if needed
+                noisy_data[key] = value
+                continue
+            if isinstance(value, (np.ndarray, np.generic)):
+                # Add noise to each element in the tuple
+                noisy_data[key] = np.array([np.random.randint(0, 50, size = val.shape) for val in value if val is not None], dtype=np.float32)
+            else:
+                # Optionally handle other non-tuple values or raise an error
+                raise TypeError(f"Unsupported data type for key {key}: {type(value)}")
+        
+        assert len(noisy_data) == len(data), "The noisy data is not of the same length as original data"
+        return noisy_data
+
+    def get_name(self):
+        return "Random data"
 
 ## Test
 if __name__ == "__main__":
     # The client code picks a concrete strategy and passes it to the context.
     # The client should be aware of the differences between strategies in order
     # to make the right choice.
-    original_data = np.array([1, 2, 3, 4, 5])
+    original_data = {"agent1" : np.array([[1, 2, 3, 4, 5]])}
     print("Original data: ", original_data)
 
     context = AdversarialNoiseContext(LaplacianNoise())
@@ -148,13 +177,20 @@ if __name__ == "__main__":
     print("Data after noise: ", context.add_noise(original_data))
     print()
 
-    original_data = np.array([[1, 2, 3, 4, 5], [3.2, 4.5, 6, 7.1, 2.4]])
+    original_data = {"agent1" : np.array([[1, 2, 3, 4, 5]])}
     context.strategy = GaussianNoise()
     print("Client: Strategy is set to gaussian noise.")
     print("Data after noise: ", context.add_noise(original_data))
     print()
 
-    original_data = np.array([[1], [2], [3], [4], [5]])
+    original_data = {"agent1" : np.array([[1, 2, 3, 4, 5]])}
     context.strategy = UniformNoise()
     print("Client: Strategy is set to uniform noise.")
     print("Data after noise: ", context.add_noise(original_data))
+    print()
+
+    original_data = {"agent1" : np.array([[1, 2, 3, 4, 5]])}
+    context.strategy = RandomizeData()
+    print("Client: Strategy is replace with random values.")
+    print("Data after noise: ", context.add_noise(original_data))
+    print()
