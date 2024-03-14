@@ -71,7 +71,6 @@ class UniformNoise(AdversarialNoiseStrategy):
     """
     def add_noise(self, data):
         noisy_data = {}
-        print(data)
         for key, value in data.items():
             if value is None:
                 # Skip None values or handle them differently if needed
