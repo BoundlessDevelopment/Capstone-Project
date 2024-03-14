@@ -347,6 +347,7 @@ class nepiada(ParallelEnv):
 
             incoming_all_messages[agent_name] = incoming_agent_messages
 
+        # Populate the incoming messages in the agents last_messages buffer - O(n^3)
         for agent_name in self.agents:
             curr_agent = self.world.get_agent(agent_name)
             for talking_agent in self.agents:
@@ -366,34 +367,56 @@ class nepiada(ParallelEnv):
 
                     incoming_messages.append(message)
 
-                past = 5
+                # How many past messages we keep track of
+                past = self.config.k_means_past_buffer_size
+                
+                # If we don't have the last messages for this agent pad the array with None
                 agents = len(self.agents)
                 if(talking_agent not in curr_agent.last_messages):
                     curr_agent.last_messages[talking_agent] = [None]*(agents*(past-1))
 
+                # If the last messages array exist append it to this array
                 curr_agent.last_messages[talking_agent].extend(incoming_messages)
+
+                # If the size exceeds the past buffer size pop the oldest message
+                # This is like a sliding window over incoming messages from the talking agent
                 if(len(curr_agent.last_messages[talking_agent]) > agents*past):
                     for i in range(agents):
                         curr_agent.last_messages[talking_agent].pop(0)
 
-        #generate truthful weights based on k-means classification
+                # Sanity check for size of last messages
+                assert len(curr_agent.last_messages[talking_agent]) <= agents*past, "The last message size exceeds past buffer size"
+
+        # Generate truthful weights based on k-means classification
         for agent_name in self.agents:
             curr_agent = self.world.get_agent(agent_name)
             curr_agent.truthful_weights = []
             for target_agent in self.agents:
+                # The messages received by the current agent from target_agent in the past 'k_means_past_buffer_size' steps
                 example_input = curr_agent.last_messages[target_agent]
-                valid_intervals = all(any(x is not None for x in example_input[i:i+9]) for i in range(0, len(example_input), 9))
+
+                # Number of total agents
+                total_agents = len(self.agents)
+
+                # Valid interval is true when:
+                # For the past 'k_means_past_buffer_size' steps, the target agent has sent messages with atleast one non-None value
+                # in each of the 'k_means_past_buffer_size' messages.
+                valid_intervals = all(any(x is not None for x in example_input[i:i+total_agents]) for i in range(0, len(example_input), total_agents))
+
                 if valid_intervals:
-                    data_point = np.array([calculate(example_input)])
+                    data_point = np.array([calculate(example_input, total_agents)])
                     curr_agent.model.partial_fit(data_point.reshape(-1, 1))
                     predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
                     curr_agent.truthful_weights.append(predicted_cluster)
                 else:
-                    curr_agent.truthful_weights.append(0.5) #update with midpoint 0.5 when unsure 
+                    curr_agent.truthful_weights.append(0.5) #update with midpoint 0.5 when unsure
+            
             for i in range(len(curr_agent.truthful_weights)):
                 if curr_agent.truthful_weights[i] == 0:
                     curr_agent.truthful_weights[i] = 0.1
+            
             print(curr_agent.truthful_weights)
+
         return incoming_all_messages
 
 

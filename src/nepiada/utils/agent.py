@@ -53,6 +53,12 @@ class Agent(Entity):  # properties of agent entities
 
         self.truthful_weights = []
 
+        # This is a dict of the form:
+        # Key: The agent name that is sending it the information. Call this agent i
+        # Value: An array of size k_means_past_buffer_size * number of agents
+        #        This is structured such as each k_means_past_buffer_size segment is 
+        #        the info agent i sent in the past. The last k_means_past_buffer_size
+        #        elements is the most recent info sent by agent i to this agent.
         self.last_messages = {}
 
         self.model = MiniBatchKMeans(n_clusters=2, random_state=42)

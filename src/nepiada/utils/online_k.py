@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import accuracy_score
 
-def calculate(data):
-    n_agents = 9
+def calculate(data, num_agents):
+    n_agents = num_agents
     sum_ranges = 0
     valid_agents_count = 0
     #print(data)
@@ -23,8 +23,8 @@ def calculate(data):
     return sum_ranges / valid_agents_count if valid_agents_count > 0 else 0
 
 
-def preprocess_input(input_data):
-    return calculate(input_data)
+def preprocess_input(input_data, num_agents):
+    return calculate(input_data, num_agents)
 
 def load_data_and_labels_from_file(file_name):
     X = []
@@ -33,7 +33,7 @@ def load_data_and_labels_from_file(file_name):
         for line in file:
             example_input_str, label_str = line.strip().split('*')
             example_input = eval(example_input_str)
-            processed_input = preprocess_input(example_input)
+            processed_input = preprocess_input(example_input, 9) # 9 is hard-coded here because of the data file
             X.append(processed_input)
             labels.append(int(label_str))
     return np.array(X), np.array(labels)
