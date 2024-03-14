@@ -32,25 +32,22 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-<<<<<<< HEAD
-    iterations: int = 5
-=======
-    iterations: int = 50
+    iterations: int = 100
     simulation_dir: str = "plots"
->>>>>>> 824e16e100ce3ac905ed9c5652326e210b244050
+    pass_agents_in_infos: bool = False
 
     # Agent related parameterss
     agent_grid_width: int = 3
-    agent_grid_height: int = 3
-    num_good_agents: int = 7
-    num_adversarial_agents: int = 2
+    agent_grid_height: int = 2
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 3
 
     # Graph update parameters
     dynamic_obs: bool = True
-    obs_radius: int = 10
+    obs_radius: int = 5
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
-    dynamic_comms_enforce_minimum: int = 1
+    dynamic_comms_enforce_minimum: int = 3
     noise = GaussianNoise()
 
     # Agent update parameters
@@ -65,6 +62,7 @@ class Config:
     empty_cell: int = -1
     global_reward_weight: int = 1
     local_reward_weight: int = 1
+    D: int = 1
     # screen_height: int = 400
     # screen_width: int = 400
 
@@ -88,9 +86,9 @@ class Config:
 
         return
 
-
 # Baseline specific configuration parameters
 class BaselineConfig(Config):
+    pass_agents_in_infos: bool = True
     D: int = 1
 
     def __init__(self):

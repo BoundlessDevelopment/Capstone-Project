@@ -2,7 +2,7 @@ import functools
 import numpy as np
 
 import gymnasium
-from gymnasium.spaces import Discrete, Box
+from gymnasium.spaces import Discrete, Box, Dict, Sequence, Text, Tuple
 
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, aec_to_parallel, wrappers
@@ -13,10 +13,12 @@ from utils.agent import AgentType
 import pygame
 
 import copy
-from collections import defaultdict
+import string
+from collections import OrderedDict, defaultdict
 import os
 import matplotlib.pyplot as plt
 
+TYPE_CHECK = True
 
 def parallel_env(config: Config):
     """
@@ -34,7 +36,6 @@ def parallel_env(config: Config):
     env = aec_to_parallel(env)
     return env
 
-
 def raw_env(render_mode=None, config: Config = Config()):
     """
     To support the AEC API, the raw_env() function just uses the from_parallel
@@ -42,7 +43,6 @@ def raw_env(render_mode=None, config: Config = Config()):
     """
     env = nepiada(render_mode=render_mode, config=config)
     return env
-
 
 class nepiada(ParallelEnv):
     metadata = {"render_modes": ["human"], "name": "nepiada_v1"}
@@ -71,16 +71,31 @@ class nepiada(ParallelEnv):
         # Note that each name is unique and hence is an ID
         for agent_name in self.world.agents:
             self.possible_agents.append(agent_name)
+        
+        print("NEPIADA INFO: All Agents: ", str(self.possible_agents))
 
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
-        # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-
-        # Observation space is defined as a N x 2 matrix, where each row corresponds to an agents coordinates.
-        # The first column stores the x coordinate and the second column stores the y coordinate
-        return Box(
-            low=0, high=self.config.size, shape=(self.total_agents, 2), dtype=np.int_
+        """
+        This is the way the observations are structured for RLib. Eventually all the values are flattened internally.
+        Note that the order in which the observation is flattened is alphabetically in order of the key values.
+        """
+        return Dict(
+            {
+                "target_neighbours": Box(
+                    low=-self.config.size, high=self.config.size, shape=(self.total_agents, 2), dtype=np.float32
+                ),
+                "beliefs": Box(
+                    low=0,
+                    high=self.config.size + 1,
+                    shape=(self.total_agents, 2),
+                    dtype=np.float32,
+                ),
+                "agent_position": Box(
+                    low=0, high=self.config.size + 1, shape=(2,), dtype=np.float32
+                ),
+            }
         )
 
     # Action space should be defined here.
@@ -122,24 +137,176 @@ class nepiada(ParallelEnv):
         self._dump_pos_graphs()
         pass
 
-    def get_observations(self):
+    def strip_extreme_values_and_update_beliefs(
+        self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
+    ):
         """
-        The 2xNxN observation structure returned below are the coordinates of each agents that each agent can directly observe
-        observations[i][j] is the location that drone i sees drone j at
+        This function strips the extreme values from the incoming messages according
+        to the D value. It strips the D greater values compared to it's current beliefs,
+        as well as the D lesser values compared to it's current beliefs and updates the beliefs
+        with the average of the remaining communication messages. If no communication messages
+        are left for the remaining agents, the agent's new belief of the target's agents position
+        remains unchanged.
         """
-        observations = {agent: None for agent in self.agents}
+        D_value = self.config.D
+
+        # Estimate the postion of the target agent based on the incomming messages from other agents
+        in_messages = []
+        for other_agent in incoming_messages:
+            if target_agent_name in incoming_messages[other_agent]:
+                message = incoming_messages[other_agent][target_agent_name]
+                
+                # Type check
+                if TYPE_CHECK and not isinstance(message, (np.ndarray, np.generic)):
+                    print("Found type: ", type(message))
+                    assert False, "The type of helpful belief is not a numpy array"
+
+                in_messages.append(message)
+
+        # If we received no information about the target agent we use the previous information
+        if len(in_messages) == 0:
+            new_beliefs[target_agent_name] = curr_beliefs[target_agent_name]
+
+            # Type check
+            if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+                print("Found type: ", type(curr_beliefs[target_agent_name]))
+                assert False, "The type of net_estimate when no info is available is not a numpy array"
+            
+        else:
+            if curr_beliefs[target_agent_name] is None:
+                # Average all the incoming messages for the case where we don't have an estimate for the current agent
+                x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
+                y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
+                new_beliefs[target_agent_name] = np.array([x_pos_mean, y_pos_mean], dtype=np.float32)
+                return
+
+            if len(in_messages) <= D_value * 2:
+                # Not enough messages to strip
+                if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+                    print("Found type: ", type(curr_beliefs[target_agent_name]))
+                    assert False, "The type of net_estimate when no info is available is not a numpy array"
+
+                new_beliefs[target_agent_name] = np.array(curr_beliefs[target_agent_name], dtype=np.float32)
+                return
+
+            x_pos_deviation = []
+            y_pos_deviation = []
+            for message in in_messages:
+                x_pos_deviation.append(message[0] - curr_beliefs[target_agent_name][0])
+                y_pos_deviation.append(message[1] - curr_beliefs[target_agent_name][1])
+
+            # Sort the deviations
+            x_pos_deviation.sort()
+            y_pos_deviation.sort()
+
+            # Remove D lowest and D highest values
+            x_pos_deviation = x_pos_deviation[D_value:-D_value]
+            y_pos_deviation = y_pos_deviation[D_value:-D_value]
+
+            # Average the remaining values
+            x_pos_delta = sum(x_pos_deviation) / len(x_pos_deviation)
+            y_pos_delta = sum(y_pos_deviation) / len(y_pos_deviation)
+
+            # Update the beliefs
+            new_beliefs[target_agent_name] = np.array([
+                curr_beliefs[target_agent_name][0] + x_pos_delta,
+                curr_beliefs[target_agent_name][1] + y_pos_delta,
+            ], dtype=np.float32)
+
+    def get_observations(self, incoming_messages):
+        """
+        The observation space is an OrderedDict where the key is the agent_name and the value is a dictionary of two types of observations:
+
+        - agent_position: The current position of the agent
+        - beliefs: The belief each agent has about every other agents position
+            - This is made by first getting info about observable agents
+            - Then for the rest of the agents we estimate using the communicated messages
+        """
+        beliefs = {agent: None for agent in self.agents}
+
+        # Get the actual position of agents within the observation radius
         for agent_name in self.agents:
-            observation = {}
+            agent_beliefs = {}
             for observed_agent_name in self.agents:
                 observed_agent = self.world.get_agent(observed_agent_name)
-                if observed_agent_name in self.world.graph.obs[agent_name]:
-                    observation[observed_agent_name] = (
-                        observed_agent.p_pos[0],
-                        observed_agent.p_pos[1],
+                if (observed_agent_name == agent_name) or (observed_agent_name in self.world.graph.obs[agent_name]):
+                    agent_beliefs[observed_agent_name] = observed_agent.p_pos # Can be observed
+                else:
+                    agent_beliefs[observed_agent_name] = None  # Cannot be observed
+            beliefs[agent_name] = agent_beliefs
+
+        # Estimate the position of the remaining agents using comm graph and extrema pruning
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+
+            for other_agent_name in self.agents:
+                # The other agent is either itself or observed
+                if (agent == other_agent_name or beliefs[agent_name][other_agent_name] is not None):
+                    continue
+
+                if incoming_messages[agent_name] is not None:
+                    self.strip_extreme_values_and_update_beliefs(
+                        incoming_messages[agent_name],
+                        agent.beliefs,
+                        beliefs[agent_name],
+                        other_agent_name
                     )
                 else:
-                    observation[observed_agent_name] = None  # Cannot be observed
+                    assert False, "Logically, we should never reach here"
+                    print("Agent not within communication or observation radius!")
+
+        # Sanity check
+        for agent_name in self.agents:
+            if agent_name not in beliefs or beliefs[agent_name] is None:
+                assert False, "By this point none of the beliefs should be None"
+            for other_agent_name in self.agents:
+                if other_agent_name not in beliefs[agent_name] or beliefs[agent_name][other_agent_name] is None:
+                    assert False, "By this point none of the beliefs should be None"
+                if TYPE_CHECK and not isinstance(beliefs[agent_name][other_agent_name], (np.ndarray, np.generic)):
+                    print("Found type: ", type(beliefs[agent_name][other_agent_name]))
+                    print("The entry: ", (beliefs[agent_name][other_agent_name]))
+                    assert False, "The final state of belief is not a numpy array"
+
+        # Update the beliefs of the agents
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            agent.beliefs = beliefs[agent_name]
+
+        # RLib Observations
+        observations = {agent: None for agent in self.agents}
+        for agent_name in self.agents:
+            observation = OrderedDict()
+            # Get the agent
+            curr_agent = self.world.get_agent(agent_name)
+            # Write position of the agent in np array format
+            observation["agent_position"] = np.array(curr_agent.p_pos, dtype=np.float32)
+
+            # True positions in np array format
+            final_beliefs = []
+            for other_agent_name in self.agents:
+                final_beliefs.append(beliefs[agent_name][other_agent_name])
+            
+            observation["beliefs"] = np.array(final_beliefs, dtype=np.float32)
+            # Clip the beliefs to be within the grid
+            observation["beliefs"] = np.clip(observation["beliefs"], 0, self.config.size + 1)
+
+            # Store the target neighbours
+            observation["target_neighbours"] = self.obs_target_neighbours[agent_name]
             observations[agent_name] = observation
+
+        # Sanity Check
+        for agent, observation in observations.items():
+            if TYPE_CHECK and not isinstance(observation["agent_position"], (np.ndarray, np.generic)):
+                print("Found position type: ", type(observation["agent_position"]))
+                print("The entry: ", (observation["agent_position"]))
+                assert False, "The position in RLib observation is not a numpy array"
+
+            if TYPE_CHECK and not isinstance(observation["beliefs"], (np.ndarray, np.generic)):
+                print("Found beliefs type: ", type(observation["beliefs"]))
+                print("The entry: ", (observation["beliefs"]))
+                assert False, "The beliefs in RLib observation is not a numpy array"
+            
+        # print(f"RLib observation: {observations}\n")
         return observations
 
     def get_all_messages(self):
@@ -149,35 +316,34 @@ class nepiada(ParallelEnv):
         """
         incoming_all_messages = {}
         for agent_name in self.agents:
-            observation = self.observations[agent_name]
-
+            observation = self.world.graph.obs[agent_name]
             incoming_agent_messages = {}
 
             for target_agent_name in self.agents:
                 incoming_communcation_messages = {}
 
-                if not observation[target_agent_name]:
+                if target_agent_name not in observation:
                     # Must estimate where the agent is via communication
-
                     for helpful_agent in self.world.graph.comm[agent_name]:
                         curr_agent = self.world.get_agent(helpful_agent)
                         if curr_agent.type == AgentType.ADVERSARIAL:
-                            helpful_beliefs = self.config.noise.add_noise(
-                                curr_agent.beliefs
-                            )
+                            helpful_beliefs = self.config.noise.add_noise(curr_agent.beliefs)
                         else:
                             helpful_beliefs = curr_agent.beliefs
-                        if helpful_beliefs[target_agent_name]:
-                            incoming_communcation_messages[helpful_agent] = (
-                                helpful_beliefs[target_agent_name][0],
-                                helpful_beliefs[target_agent_name][1],
-                            )
 
-                incoming_agent_messages[
-                    target_agent_name
-                ] = incoming_communcation_messages
+                        # Type check
+                        for key, value in helpful_beliefs.items():
+                            if TYPE_CHECK and not isinstance(value, (np.ndarray, np.generic)):
+                                print("Found type: ", type(value))
+                                assert False, "The type of helpful belief is not a numpy array"
+
+                        if helpful_beliefs[target_agent_name] is not None:
+                            incoming_communcation_messages[helpful_agent] = helpful_beliefs[target_agent_name]
+
+                incoming_agent_messages[target_agent_name] = incoming_communcation_messages
 
             incoming_all_messages[agent_name] = incoming_agent_messages
+
         return incoming_all_messages
 
     def initialize_beliefs(self):
@@ -185,9 +351,16 @@ class nepiada(ParallelEnv):
         Initializing the 2xN structure holds where each agent believes that itself and each other agent is located
         """
         for agent_name in self.agents:
-            beliefs = self.world.get_agent(agent_name).beliefs
+            agent = self.world.get_agent(agent_name)
             for target_agent_name in self.agents:
-                beliefs[target_agent_name] = None
+                if (target_agent_name == agent_name):
+                    agent.beliefs[target_agent_name] = np.array(agent.p_pos, dtype=np.float32)
+                else:
+                    agent.beliefs[target_agent_name] = np.array([np.random.randint(self.config.size), np.random.randint(self.config.size)], dtype=np.float32)
+
+    def _reset_agent_pos(self):
+        for agent_name in self.agents:
+            self.world.get_agent(agent_name).p_pos = np.random.randint(low=0, high=Config.size, size=2)
 
     def initialize_infos_with_agents(self):
         for agent_name in self.agents:
@@ -230,6 +403,21 @@ class nepiada(ParallelEnv):
         plt.savefig(f"{self.config.simulation_dir}/all_traj.png")
         plt.close()  # Close the plot to free up memory
 
+    def _set_obs_target_neighbours(self):
+        # Populate a list of target neighbours for each agent, if there isn't a neighbour relationship, set distance as [0, 0],
+        # otherwise set the distance as the relative distance between the two agents
+        obs_target_neighbours = {}
+        for agent_name in self.agents:
+            agent = self.world.get_agent(agent_name)
+            target_neighs = []
+            for other_agent_name in self.agents:
+                if other_agent_name not in agent.target_neighbour:
+                    target_neighs.append([0, 0])
+                else:
+                    target_neighs.append(agent.target_neighbour[other_agent_name])
+            obs_target_neighbours[agent_name] = np.array(target_neighs, dtype=np.float32)
+        return obs_target_neighbours
+
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
@@ -239,7 +427,6 @@ class nepiada(ParallelEnv):
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
-        print("NEPIADA INFO: All Agents: ", str(self.agents))
 
         # A list for each agent to show distance from final target
         self.agents_pos = defaultdict(lambda: defaultdict(list))
@@ -248,11 +435,19 @@ class nepiada(ParallelEnv):
 
         self.num_moves = 0
 
+        self._reset_agent_pos()
+
         # Reinitialize the grid
         self.world.grid.reset_grid()
+        self.world.grid.update_grid(self.world.agents)
 
         # Reset the comm and observation graphs
         self.world.graph.reset_graphs()
+        self.world.graph.update_graphs(self.world.agents)
+
+        # Store prev scores in agent
+        scores = self._compute_scores()
+        self._store_scores_in_agent(scores)
 
         # Reset the rewards
         self.rewards = {agent: 0 for agent in self.agents}
@@ -260,16 +455,27 @@ class nepiada(ParallelEnv):
         # Reset the truncations
         self.truncations = {agent: False for agent in self.agents}
 
-        # Info will be used to pass information about comm graphs, beliefs, and incoming messages
+        # Infos is used to pass aditional information
         self.infos = {agent: {} for agent in self.agents}
 
-        # Initialize the infos with the agent instances, so the algorithm can access AND update beliefs.
-        self.initialize_infos_with_agents()
+        # Store the target neighbours for each agent
+        self.obs_target_neighbours = self._set_obs_target_neighbours()
+
+        # Initialize the infos with the agent instances, so the algorithm can access agent beliefs.
+        if (self.config.pass_agents_in_infos):
+            self.initialize_infos_with_agents()
+
+        # For incomming messages
+        self.incoming_msgs = {agent: {} for agent in self.agents}
+
+        # Set all beliefs to random values
+        self.initialize_beliefs()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
-        self.observations = self.get_observations()
+        self.observations = self.get_observations(self.incoming_msgs)
 
-        self.initialize_beliefs()
+        # Store the minimum score seen so far, may or may not be used in rewards depending on the function in use.
+        self.min_score = min(scores.values())
 
         print("NEPIADA INFO: Environment Reset Successful. All Checks Passed.")
         return self.observations, self.infos
@@ -317,25 +523,24 @@ class nepiada(ParallelEnv):
 
         # Update the observation and communication graphs at each iteration
         self.world.update_graphs()
-
-        self.observations = self.get_observations()
-
-        # Second pass communicated beliefs
-        incoming_all_messages = self.get_all_messages()
+        
+        # For incomming messages
+        self.incoming_msgs = {agent: {} for agent in self.agents}
 
         # Info will be used to pass information about comm graphs, beliefs, and incoming messages
-        self.infos = {agent_name: {} for agent_name in self.agents}
-        for agent_name in self.agents:
-            self.infos[agent_name]["comm"] = self.world.graph.comm[agent_name]
-            self.infos[agent_name]["incoming_messages"] = incoming_all_messages[
-                agent_name
-            ]
-            self.infos[agent_name]["beliefs"] = self.world.get_agent(agent_name).beliefs
-            self.infos[agent_name]["agent_instance"] = self.world.get_agent(agent_name)
+        # self.infos = {agent_name: {} for agent_name in self.agents}
+        
+        # For incomming messages
+        self.incoming_msgs = {agent: {} for agent in self.agents}
 
-        if self.render_mode == "human":
-            self.render()
+        incoming_all_messages = self.get_all_messages()
+        for agent_name in self.agents: 
+            self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
 
+        # if self.render_mode == "human":
+        #     self.render()
+
+        self.observations = self.get_observations(self.incoming_msgs)
         return self.observations, self.rewards, terminations, truncations, self.infos
 
     def move_drones(self, actions):
@@ -353,6 +558,8 @@ class nepiada(ParallelEnv):
                 collided_drones.append(agent_name)
             elif status == -1:
                 # Drone collided with boundary
+                # THANOS EXPERIMENTAL - Large negative reward will be given on instance.
+                #self.world.agents[agent_name].prev_score = -self.world.agents[agent_name].prev_score
                 pass
 
         if collided_drones:
@@ -360,20 +567,112 @@ class nepiada(ParallelEnv):
                 False
             ), "We should be allowing for multiple drones to occupy the same position"
 
+    ## THANOS EXPERIMENTAL
+    ## Rewards - Default
     def get_rewards(self):
-        """
-        This function assigns reward to all agents based on the following two criterias:
-
-        - global_arrangement_reward : The average distance of all agents from the target
-        - local_arrangement_reward : The deviation of the agent from the ideal arrangement with it's target neighbours
-
-        Refer to D. Gadjov and Pavel's paper for more details about it.
-
-        Returns: A dictionary with agent_name as key and reward as a value
-        """
         rewards = {}
+        curr_scores = self._compute_scores()
 
-        # Get the average vector distance of the agents from target
+        for agent_name in self.agents:
+            rewards[agent_name] = curr_scores[agent_name]
+        
+        self._store_scores_in_agent(curr_scores)
+        return rewards
+
+    ## THANOS EXPERIMENTAL
+    def get_rewards_no_delta(self):
+        rewards = {}
+        curr_scores = self._compute_scores()
+    
+        values = curr_scores.values()
+        min_r = min(values)
+        if min_r < self.min_score:
+            self.min_score = min_r
+
+        if min_r == 0:
+            print("NEPIADA WARN: All rewards are the same. This should not happen.")
+            print(f"NEPIADA INFO: Current Scores: {str(curr_scores)} | Current Rewards: {str(rewards)} | Values: {str(values)}")
+
+        for agent_name in self.agents:
+            if self.world.agents[agent_name].prev_score <= 0:
+                # Normalize the rewards to be between 0 and 10
+                if self.min_score == 0:
+                    rewards[agent_name] = 0
+                else:
+                    rewards[agent_name] = (curr_scores[agent_name] - self.min_score) / (0 - self.min_score) * 10
+
+                # Boundary penalty, -1 for how close an agent is to the boundary, capped at -10
+                dist_to_left = self.world.agents[agent_name].p_pos[0]
+                dist_to_right = self.config.size - self.world.agents[agent_name].p_pos[0]
+                dist_to_top = self.config.size - self.world.agents[agent_name].p_pos[1]
+                dist_to_bottom = self.world.agents[agent_name].p_pos[1]
+
+                min_dist = min(dist_to_left, dist_to_right, dist_to_top, dist_to_bottom)
+                if min_dist <= 6:
+                    rewards[agent_name] -= (6 - min_dist)
+            else:
+                # -10 reward for agents that collided with boundary
+                rewards[agent_name] = -10
+        
+        self._store_scores_in_agent(curr_scores)
+        return rewards
+
+    ## THANOS EXPERIMENTAL
+    ## Compute Scores with more local-focused rewards
+    def _compute_scores(self):
+        """
+        Compute the scores of the agents based on their distance from the target
+        """
+        scores = {}
+    
+        target_x = self.config.size / 2
+        target_y = self.config.size / 2
+        global_arrangement_vector = np.array([0.0, 0.0])
+
+        # for agent_name in self.agents:
+        #     agent = self.world.agents[agent_name]
+        #     global_arrangement_vector += np.array(
+        #         [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+        #     )
+
+        # global_arrangement_vector = np.divide(
+        #     global_arrangement_vector, len(self.agents)
+        # )
+
+        # We update the global arrangement vector in the graph to visually inspect the global centroid of the agents
+        self.world.graph.global_arrangement_vector = global_arrangement_vector
+
+        # Add each agents reward based on their target neighbours
+        for agent_name in self.agents:
+            agent = self.world.agents[agent_name]
+            agent_x = agent.p_pos[0]
+            agent_y = agent.p_pos[1]
+            deviation_from_arrangement = 0
+            deviation_from_global_arrangement = np.sqrt((agent_x - target_x) ** 2 + (target_y - agent_y) ** 2)
+
+            for neighbour_name, ideal_distance in agent.target_neighbour.items():
+                neighbour = self.world.agents[neighbour_name]
+                neighbour_x = neighbour.p_pos[0]
+                neighbour_y = neighbour.p_pos[1]
+                ideal_x = ideal_distance[0]
+                ideal_y = ideal_distance[1]
+
+                deviation_from_arrangement += np.sqrt(
+                    (neighbour_x - agent_x - ideal_x) ** 2
+                    + (neighbour_y - agent_y - ideal_y) ** 2
+                )
+
+            scores[agent_name] = -((self.config.global_reward_weight * deviation_from_global_arrangement) + (self.config.local_reward_weight * deviation_from_arrangement))
+            
+        return scores
+
+    ## THANOS EXPERIMENTAL
+    def _compute_scores_global(self):
+        """
+        Compute the scores of the agents based on their distance from the target
+        """
+        scores = {}
+    
         target_x = self.config.size / 2
         target_y = self.config.size / 2
         global_arrangement_vector = np.array([0.0, 0.0])
@@ -412,10 +711,11 @@ class nepiada(ParallelEnv):
                     + (neighbour_y - agent_y - ideal_y) ** 2
                 )
 
-            # Compute the agent's net reward, note the negative sign
-            rewards[agent_name] = -(
-                (self.config.global_reward_weight * global_arrangement_reward)
-                + (self.config.local_reward_weight * deviation_from_arrangement)
-            )
+            scores[agent_name] = -((self.config.global_reward_weight * global_arrangement_reward) + (self.config.local_reward_weight * deviation_from_arrangement))
+            
+        return scores
 
-        return rewards
+    def _store_scores_in_agent(self, scores):
+        for agent_name in self.agents:
+            self.world.agents[agent_name].prev_score = scores[agent_name]
+

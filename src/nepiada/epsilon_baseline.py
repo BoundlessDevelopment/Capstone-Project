@@ -67,7 +67,7 @@ def create_beliefs_with_obs(agent_name, observations, all_agents):
     beliefs = {}
 
     for agent_name in all_agents:
-        if observations[agent_name]:
+        if agent_name in observations and observations[agent_name] is not None:
             beliefs[agent_name] = observations[agent_name]
         else:
             beliefs[agent_name] = None
@@ -200,6 +200,7 @@ def step(agent_name, agent_instance, observations, infos, env, config):
 
 def main():
     env_config = EpsilonBaselineConfig()
+    env_config.pass_agents_in_infos = True
 
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
