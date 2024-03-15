@@ -45,6 +45,7 @@ class Config:
     # Graph update parameters
     dynamic_obs: bool = False
     obs_radius: int = 0
+    k_means_pruning: bool = True
     k_means_past_buffer_size: int = 10
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15

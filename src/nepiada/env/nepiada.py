@@ -163,8 +163,8 @@ class nepiada(ParallelEnv):
                 # Only append if the prediction for the 'other agent' is truthful or unknown
                 if (trustworthy_agents[other_agent] != 0.1):
                     in_messages.append(message)
-                else:
-                    print(f"Disregarding {other_agent}'s message")
+                # else:
+                #     print(f"Disregarding {other_agent}'s message")
 
         # If we received no information about the target agent we use the previous information
         if len(in_messages) == 0:
@@ -298,8 +298,8 @@ class nepiada(ParallelEnv):
 
                 if incoming_messages[agent_name] is not None:
                     # If k-means has made a stable prediction
-                    if trustworthy_agents[agent_name] is not None:
-                        # print("Relying on K-means clustering")
+                    if trustworthy_agents[agent_name] is not None and self.config.k_means_pruning:
+                        print("Relying on K-means clustering")
                         self.strip_adversarial_info(
                             incoming_messages[agent_name],
                             trustworthy_agents[agent_name],
@@ -482,13 +482,13 @@ class nepiada(ParallelEnv):
                     assert False, "Should not enter here"
             
             if (all(prediction == 0.5 for prediction in curr_agent.truthful_weights)):
-                print("The agent is confused")
-                print(curr_agent.truthful_weights)
+                # print("The agent is confused")
+                # print(curr_agent.truthful_weights)
                 trustworthy_agents[agent_name] = None
             else:
                 trustworthy_agents[agent_name] = curr_agent.truthful_weights
 
-            print(curr_agent.truthful_weights)
+            # print(curr_agent.truthful_weights)
 
         return incoming_all_messages, trustworthy_agents
 
