@@ -139,6 +139,49 @@ class nepiada(ParallelEnv):
         self._dump_pos_graphs()
         pass
 
+    def strip_adversarial_info(
+                self,
+                incoming_messages,
+                trustworthy_agents,
+                curr_beliefs,
+                new_beliefs,
+                target_agent_name
+    ):
+        # Estimate the postion of the target agent based on the incomming messages from other agents
+        in_messages = []
+        for other_agent in incoming_messages:
+            if target_agent_name in incoming_messages[other_agent]:
+                message = incoming_messages[other_agent][target_agent_name]
+                # print(f'Message from {other_agent} about {target_agent_name}: {message}')
+                # print(f'Prediction about {other_agent} from k-means: {trustworthy_agents[other_agent]}')
+                
+                # Type check
+                if TYPE_CHECK and not isinstance(message, (np.ndarray, np.generic)):
+                    print("Found type: ", type(message))
+                    assert False, "The type of helpful belief is not a numpy array"
+
+                # Only append if the prediction for the 'other agent' is truthful or unknown
+                if (trustworthy_agents[other_agent] != 0.1):
+                    in_messages.append(message)
+                else:
+                    print(f"Disregarding {other_agent}'s message")
+
+        # If we received no information about the target agent we use the previous information
+        if len(in_messages) == 0:
+            new_beliefs[target_agent_name] = curr_beliefs[target_agent_name]
+
+            # Type check
+            if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+                print("Found type: ", type(curr_beliefs[target_agent_name]))
+                assert False, "The type of net_estimate when no info is available is not a numpy array"
+
+        else:
+            # Average all the incoming messages
+            x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
+            y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
+            new_beliefs[target_agent_name] = np.array([x_pos_mean, y_pos_mean], dtype=np.float32)
+
+        return
 
     def strip_extreme_values_and_update_beliefs(
         self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
@@ -256,14 +299,14 @@ class nepiada(ParallelEnv):
                 if incoming_messages[agent_name] is not None:
                     # If k-means has made a stable prediction
                     if trustworthy_agents[agent_name] is not None:
-                        print("Relying on K-means clustering")
-                        pass
-                        # self.strip_adversarial_info(
-                        #     incoming_messages[agent_name],
-                        #     agent.beliefs,
-                        #     beliefs[agent_name],
-                        #     other_agent_name
-                        # )
+                        # print("Relying on K-means clustering")
+                        self.strip_adversarial_info(
+                            incoming_messages[agent_name],
+                            trustworthy_agents[agent_name],
+                            agent.beliefs,
+                            beliefs[agent_name],
+                            other_agent_name
+                        )
                     # Else we rely on D-pruning
                     else:
                         print("Relying on D-pruning")
@@ -410,10 +453,10 @@ class nepiada(ParallelEnv):
         trustworthy_agents = {}
         for agent_name in self.agents:
             curr_agent = self.world.get_agent(agent_name)
-            curr_agent.truthful_weights = []
+            curr_agent.truthful_weights = {}
             for target_agent in self.agents:
                 # The messages received by the current agent from target_agent in the past 'k_means_past_buffer_size' steps
-                example_input = curr_agent.last_messages[target_agent]
+                list_of_past_messages = curr_agent.last_messages[target_agent]
 
                 # Number of total agents
                 total_agents = len(self.agents)
@@ -421,19 +464,22 @@ class nepiada(ParallelEnv):
                 # Valid interval is true when:
                 # For the past 'k_means_past_buffer_size' steps, the target agent has sent messages with atleast one non-None value
                 # in each of the 'k_means_past_buffer_size' messages.
-                valid_intervals = all(any(x is not None for x in example_input[i:i+total_agents]) for i in range(0, len(example_input), total_agents))
+                valid_intervals = all(any(x is not None for x in list_of_past_messages[i:i+total_agents]) for i in range(0, len(list_of_past_messages), total_agents))
 
                 if valid_intervals:
-                    data_point = np.array([calculate(example_input, total_agents)])
+                    data_point = np.array([calculate(list_of_past_messages, total_agents)])
                     curr_agent.model.partial_fit(data_point.reshape(-1, 1))
                     predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
-                    curr_agent.truthful_weights.append(predicted_cluster)
+                    if predicted_cluster == 0:
+                        curr_agent.truthful_weights[target_agent] = 0.1
+                    else:
+                        curr_agent.truthful_weights[target_agent] = predicted_cluster
                 else:
-                    curr_agent.truthful_weights.append(0.5) #update with midpoint 0.5 when unsure
-            
-            for i in range(len(curr_agent.truthful_weights)):
-                if curr_agent.truthful_weights[i] == 0:
-                    curr_agent.truthful_weights[i] = 0.1
+                    curr_agent.truthful_weights[target_agent] = 0.5 #update with midpoint 0.5 when unsure
+
+            for key, val in curr_agent.truthful_weights.items():
+                if val == 0:
+                    assert False, "Should not enter here"
             
             if (all(prediction == 0.5 for prediction in curr_agent.truthful_weights)):
                 print("The agent is confused")

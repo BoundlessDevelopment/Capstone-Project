@@ -51,7 +51,7 @@ class Agent(Entity):  # properties of agent entities
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
 
-        self.truthful_weights = []
+        self.truthful_weights = {}
 
         # This is a dict of the form:
         # Key: The agent name that is sending it the information. Call this agent i
