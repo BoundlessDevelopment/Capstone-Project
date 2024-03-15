@@ -1,7 +1,7 @@
 # TODO: Make an enum
 # Default: 0 - stay, 1 - up, 2 - down, 3 - left, 4 - right
 
-from utils.noise import GaussianNoise
+from utils.noise import GaussianNoise, RandomizeData
 from .anim_consts import WIDTH, HEIGHT
 
 
@@ -32,7 +32,7 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-    iterations: int = 100
+    iterations: int = 50
     simulation_dir: str = "plots"
     pass_agents_in_infos: bool = False
 
@@ -50,7 +50,7 @@ class Config:
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
     dynamic_comms_enforce_minimum: int = 3
-    noise = GaussianNoise()
+    noise = RandomizeData(size)
 
     # Agent update parameters
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple

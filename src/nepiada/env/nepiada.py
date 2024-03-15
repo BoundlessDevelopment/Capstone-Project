@@ -299,7 +299,7 @@ class nepiada(ParallelEnv):
                 if incoming_messages[agent_name] is not None:
                     # If k-means has made a stable prediction
                     if trustworthy_agents[agent_name] is not None and self.config.k_means_pruning:
-                        print("Relying on K-means clustering")
+                        # print("Relying on K-means clustering")
                         self.strip_adversarial_info(
                             incoming_messages[agent_name],
                             trustworthy_agents[agent_name],
@@ -309,7 +309,7 @@ class nepiada(ParallelEnv):
                         )
                     # Else we rely on D-pruning
                     else:
-                        print("Relying on D-pruning")
+                        # print("Relying on D-pruning")
                         self.strip_extreme_values_and_update_beliefs(
                             incoming_messages[agent_name],
                             agent.beliefs,
@@ -470,16 +470,9 @@ class nepiada(ParallelEnv):
                     data_point = np.array([calculate(list_of_past_messages, total_agents)])
                     curr_agent.model.partial_fit(data_point.reshape(-1, 1))
                     predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
-                    if predicted_cluster == 0:
-                        curr_agent.truthful_weights[target_agent] = 0.1
-                    else:
-                        curr_agent.truthful_weights[target_agent] = predicted_cluster
+                    curr_agent.truthful_weights[target_agent] = predicted_cluster
                 else:
                     curr_agent.truthful_weights[target_agent] = 0.5 #update with midpoint 0.5 when unsure
-
-            for key, val in curr_agent.truthful_weights.items():
-                if val == 0:
-                    assert False, "Should not enter here"
             
             if (all(prediction == 0.5 for prediction in curr_agent.truthful_weights)):
                 # print("The agent is confused")
@@ -488,7 +481,18 @@ class nepiada(ParallelEnv):
             else:
                 trustworthy_agents[agent_name] = curr_agent.truthful_weights
 
-            # print(curr_agent.truthful_weights)
+            # Dump logs to generate plots
+            f = open("predictions.csv", "a")
+            sortedKeys = list(curr_agent.truthful_weights.keys())
+            sortedKeys.sort()
+            for key in sortedKeys:
+                value = curr_agent.truthful_weights[key]
+                data = str(value - 0.5) + ", "
+                f.write(data)
+            f.write("\n")
+            f.close()
+            
+            print(curr_agent.truthful_weights)
 
         return incoming_all_messages, trustworthy_agents
 
