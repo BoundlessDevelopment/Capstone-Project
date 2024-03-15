@@ -39,8 +39,8 @@ class Config:
     # Agent related parameterss
     agent_grid_width: int = 3
     agent_grid_height: int = 3
-    num_good_agents: int = 6
-    num_adversarial_agents: int = 3
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 6
 
     # Graph update parameters
     dynamic_obs: bool = False
@@ -50,7 +50,7 @@ class Config:
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
     dynamic_comms_enforce_minimum: int = 3
-    noise = RandomizeData(size)
+    noise = GaussianNoise()
 
     # Agent update parameters
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
