@@ -5,6 +5,7 @@ import itertools
 from enum import Enum
 from utils.config import Config
 
+from sklearn.cluster import MiniBatchKMeans
 
 # Types of agents
 class AgentType(Enum):
@@ -49,6 +50,20 @@ class Agent(Entity):  # properties of agent entities
 
         # This dictionary stores the ideal distance from a drone's neighbour, based on relative_x and relative_y distance
         self.target_neighbour = {}
+
+        self.truthful_weights = {}
+
+        # This is a dict of the form:
+        # Key: The agent name that is sending it the information. Call this agent i
+        # Value: An array of size k_means_past_buffer_size * number of agents
+        #        This is structured such as each k_means_past_buffer_size segment is 
+        #        the info agent i sent in the past. The last k_means_past_buffer_size
+        #        elements is the most recent info sent by agent i to this agent.
+        self.last_messages = {}
+
+        self.model = MiniBatchKMeans(n_clusters=2, random_state=42)
+        dummy_inputs = np.array([1, 0])  # Adjust these values as needed
+        self.model.partial_fit(dummy_inputs.reshape(-1, 1))
 
         self.prev_score = 0
 

@@ -32,19 +32,21 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
-    iterations: int = 100
+    iterations: int = 50
     simulation_dir: str = "plots"
     pass_agents_in_infos: bool = False
 
     # Agent related parameterss
     agent_grid_width: int = 3
     agent_grid_height: int = 3
-    num_good_agents: int = 5
-    num_adversarial_agents: int = 4
+    num_good_agents: int = 3
+    num_adversarial_agents: int = 6
 
     # Graph update parameters
-    dynamic_obs: bool = True
-    obs_radius: int = 5
+    dynamic_obs: bool = False
+    obs_radius: int = 0
+    k_means_pruning: bool = True
+    k_means_past_buffer_size: int = 10
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
     dynamic_comms_enforce_minimum: int = 3
