@@ -22,41 +22,41 @@ def env_creator(args):
 
 
 if __name__ == "__main__":    
-  #  ray.init()
+    ray.init()
 
- #   env = env_creator({})
+    env = env_creator({})
     register_env("nepiada", env_creator)
     
     config = PPOConfig()
     config = config.training(gamma=0.67, lr=0.00005, kl_coeff=0.3, train_batch_size=128, vf_clip_param=100, clip_param=0.2, entropy_coeff=0.001)
     config = config.resources(num_gpus=1)
     config = config.rollouts(num_rollout_workers=0)
-    config = config.multi_agent(policies=["parameter_sharing"], policy_mapping_fn=(lambda agent_id, *args, **kwargs: "parameter_sharing"))
+    config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
     config = config.environment("nepiada")
 
 
     algo = config.build()
 
-    ## TRAINING #####
-    # best_reward_mean = -100000000
-    # iterations_since_last_checkpoint = 0
-    # name_of_experiment = "PPO_Mar12_ParamShare_LocalReward_Gamma067_LR00001_3A3T_2"
-    # algo.restore("C:/Users/thano/ray_results/PPO_Mar12_ParamShare_LocalReward_Gamma067_LR00001_3A3T_2/5224_-30569.544658786097")
-    # for i in range(100000):
-    #     result = algo.train()
-    #     print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
-    #     iterations_since_last_checkpoint += 1
-    #     if result["episode_reward_mean"] > best_reward_mean:
-    #         print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
-    #         best_reward_mean = result["episode_reward_mean"]
-    #         checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_" + str(result["episode_reward_mean"]))
-    #         print("Checkpoint saved at: ", checkpoint.checkpoint.path)
-    #         iterations_since_last_checkpoint = 0
-    #     elif iterations_since_last_checkpoint > 50:
-    #         print("Iterations since last checkpoint exceeded threshold | Saving checkpoint...")
-    #         checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_TOCHECK_" + str(result["episode_reward_mean"]))
-    #         print("Checkpoint saved at: ", checkpoint.checkpoint.path)
-    #         iterations_since_last_checkpoint = 0
+    # TRAINING #####
+    best_reward_mean = -100000000
+    iterations_since_last_checkpoint = 0
+    name_of_experiment = "PPO_Mar12_ParamShare_LocalReward_Gamma067_LR00001_3A3T_2"
+    algo.restore("C:/Users/thano/ray_results/PPO_Mar12_ParamShare_LocalReward_Gamma067_LR00001_3A3T_2/5224_-30569.544658786097")
+    for i in range(100000):
+        result = algo.train()
+        print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
+        iterations_since_last_checkpoint += 1
+        if result["episode_reward_mean"] > best_reward_mean:
+            print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
+            best_reward_mean = result["episode_reward_mean"]
+            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_" + str(result["episode_reward_mean"]))
+            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+            iterations_since_last_checkpoint = 0
+        elif iterations_since_last_checkpoint > 50:
+            print("Iterations since last checkpoint exceeded threshold | Saving checkpoint...")
+            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_TOCHECK_" + str(result["episode_reward_mean"]))
+            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+            iterations_since_last_checkpoint = 0
 
     # stop = {"episodes_total": 60000}
 

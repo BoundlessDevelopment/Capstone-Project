@@ -1,9 +1,5 @@
-# TODO: Make an enum
-# Default: 0 - stay, 1 - up, 2 - down, 3 - left, 4 - right
-
-from utils.noise import GaussianNoise, RandomizeData
+from utils.noise import GaussianNoise, RandomizeData, UniformNoise
 from .anim_consts import WIDTH, HEIGHT
-
 
 class Config:
     """
@@ -38,8 +34,8 @@ class Config:
 
     # Agent related parameterss
     agent_grid_width: int = 3
-    agent_grid_height: int = 3
-    num_good_agents: int = 5
+    agent_grid_height: int = 2
+    num_good_agents: int = 2
     num_adversarial_agents: int = 4
 
     # Graph update parameters
