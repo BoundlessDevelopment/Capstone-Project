@@ -99,6 +99,9 @@ def main(included_data=None):
         included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
     env_config = BaselineConfig()
+    env_config.set_seed(15)
+    env_config.set_noise("gaussian")
+
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 

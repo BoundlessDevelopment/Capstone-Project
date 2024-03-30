@@ -47,7 +47,7 @@ class Config:
     dynamic_comms: bool = True
     dynamic_comms_radius: int = 15
     dynamic_comms_enforce_minimum: int = 3
-    noise = RandomizeData(size)
+    noise = RandomizeData(size, seed)
 
     # Agent update parameters
     # Possible moves for each drone. Key is the action, value is the (dx, dy) tuple
@@ -87,7 +87,7 @@ class Config:
 
     # Functions to modify the configuration parameters
     # Set the number of truthful and adversarial agents
-    def set_agents(truthful, adversarial, width, height):
+    def set_agents(self, truthful, adversarial, width, height):
         self.num_good_agents = truthful
         self.num_adversarial_agents = adversarial
         self.agent_grid_width = width
@@ -97,31 +97,31 @@ class Config:
 
     # Set the random seed
     # TODO: Implement this for internal random calls
-    def set_seed(seed):
+    def set_seed(self, seed):
         self.seed = seed
 
     # Set the observation radius
-    def set_observation_radius(radius):
+    def set_observation_radius(self, radius):
         self.obs_radius = radius
 
     # Set the type of noise
-    def set_noise(noise_type):
+    def set_noise(self, noise_type):
         match noise_type.lower():
             case "gaussian":
-                self.noise = GaussianNoise(size)
+                self.noise = GaussianNoise(self.seed)
             case "uniform":
-                self.noise = UniformNoise(size)
+                self.noise = UniformNoise(self.seed)
             case "laplacian":
-                self.noise = LaplacianNoise(size)
+                self.noise = LaplacianNoise(self.seed)
             case "randomize":
-                self.noise = RandomizeData(size)
+                self.noise = RandomizeData(self.size, self.seed)
             case _:  # Default to randomize
-                self.noise = RandomizeData(size)
+                self.noise = RandomizeData(self.size, self.seed)
 
         return
 
     # Set the number of iterations
-    def set_iterations(iterations):
+    def set_iterations(self, iterations):
         self.iterations = iterations
 
 # Baseline specific configuration parameters

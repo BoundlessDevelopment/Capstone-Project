@@ -69,6 +69,13 @@ class UniformNoise(AdversarialNoiseStrategy):
     The algorithm that adds noise to the data from a uniform distribution. 
     In a uniform distribution all values are equally likely. 
     """
+    def __init__(self, seed = 0):
+        """
+        Initializes the random seed for consistency
+        """
+        self.seed = seed
+        np.random.seed(seed)
+    
     def add_noise(self, data):
         noisy_data = {}
         for key, value in data.items():
@@ -94,6 +101,13 @@ class GaussianNoise(AdversarialNoiseStrategy):
     The algorithm that adds noise to the data from a gaussian distribution.
     A Gaussian distribution is symmetric around the mean. It is also called the bell curve or normal distribution. 
     """
+    def __init__(self, seed = 0):
+        """
+        Initializes the random seed for consistency
+        """
+        self.seed = seed
+        np.random.seed(seed)
+
     def add_noise(self, data):
         noisy_data = {}
         for key, value in data.items():
@@ -119,6 +133,13 @@ class LaplacianNoise(AdversarialNoiseStrategy):
     The algorithm that adds noise to the data from a laplacian distribution.
     A Laplacian distribution is symmetric around the mean, however it is more concentrated near the mean than a gaussian distribution.
     """
+    def __init__(self, seed = 0):
+        """
+        Initializes the random seed for consistency
+        """
+        self.seed = seed
+        np.random.seed(seed)
+
     def add_noise(self, data):
         noisy_data = {}
         for key, value in data.items():
@@ -144,11 +165,13 @@ class RandomizeData(AdversarialNoiseStrategy):
     The algorithm replaces values with random datapoints. This is not standard noise as we DO NOT add noise to the 
     values, rather we replace the values with random numbers.
     """
-    def __init__(self, max_dim):
+    def __init__(self, max_dim, seed = 0):
         """
-        Initializes the upper bound of the random data by max_dim
+        Initializes the random seed and the upper bound of the random data by max_dim
         """
+        self.seed = seed
         self._max_dim = max_dim
+        np.random.seed(seed)
 
     def add_noise(self, data):
         noisy_data = {}

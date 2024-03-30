@@ -28,14 +28,20 @@ def parallel_env(config: Config):
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
+    # Set the random seed
+    np.random.seed(config.seed)
+    
     internal_render_mode = "human"
     env = raw_env(render_mode=internal_render_mode, config=config)
     env = parallel_to_aec(env)
+    
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
+    
     # Provides a wide vareity of helpful user errors
     env = wrappers.OrderEnforcingWrapper(env)
     env = aec_to_parallel(env)
+
     return env
 
 def raw_env(render_mode=None, config: Config = Config()):
