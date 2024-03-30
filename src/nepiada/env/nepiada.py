@@ -474,15 +474,15 @@ class nepiada(ParallelEnv):
                 trustworthy_agents[agent_name] = curr_agent.truthful_weights
 
             # Dump logs to generate plots
-            # f = open("predictions.csv", "a")
-            # sortedKeys = list(curr_agent.truthful_weights.keys())
-            # sortedKeys.sort()
-            # for key in sortedKeys:
-            #     value = curr_agent.truthful_weights[key]
-            #     data = str(value - 0.5) + ", "
-            #     f.write(data)
-            # f.write("\n")
-            # f.close()
+            f = open("predictions.csv", "a")
+            sortedKeys = list(curr_agent.truthful_weights.keys())
+            sortedKeys.sort()
+            for key in sortedKeys:
+                value = curr_agent.truthful_weights[key]
+                data = str(value - 0.5) + ", "
+                f.write(data)
+            f.write("\n")
+            f.close()
             
             # print(curr_agent.truthful_weights)
 
