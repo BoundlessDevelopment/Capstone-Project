@@ -575,6 +575,7 @@ class nepiada(ParallelEnv):
         curr_scores = self._compute_scores()
 
         for agent_name in self.agents:
+            # Delta Rewards, take the current convergence score and subtract from the previous score
             rewards[agent_name] = curr_scores[agent_name] - self.world.agents[agent_name].prev_score
             # Add timestep penalty, make it more negative if rewards is calculated to be negative, and less positive if rewards calculated to be positive
             if rewards[agent_name] < 0:
@@ -583,8 +584,6 @@ class nepiada(ParallelEnv):
             elif rewards[agent_name] > 0:
                 # Up to -2x the reward based on num_moves and iterations
                 rewards[agent_name] = rewards[agent_name] - ((self.num_moves / self.config.iterations) * rewards[agent_name])
-                if rewards[agent_name] < 0:
-                    rewards[agent_name] = 0
         
         self._store_scores_in_agent(curr_scores)
         return rewards
