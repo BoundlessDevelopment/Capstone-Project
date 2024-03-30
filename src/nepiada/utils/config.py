@@ -28,6 +28,7 @@ class Config:
     # Initialization parameters
     dim: int = 2
     size: int = 50
+    seed: int = 0
     iterations: int = 50
     simulation_dir: str = "plots"
     pass_agents_in_infos: bool = False
@@ -83,6 +84,45 @@ class Config:
             self.screen_width = width
 
         return
+
+    # Functions to modify the configuration parameters
+    # Set the number of truthful and adversarial agents
+    def set_agents(truthful, adversarial, width, height):
+        self.num_good_agents = truthful
+        self.num_adversarial_agents = adversarial
+        self.agent_grid_width = width
+        self.agent_grid_height = height
+
+        assert truthful + adversarial == width * height, "Number of agents must be equal to the width * height"
+
+    # Set the random seed
+    # TODO: Implement this for internal random calls
+    def set_seed(seed):
+        self.seed = seed
+
+    # Set the observation radius
+    def set_observation_radius(radius):
+        self.obs_radius = radius
+
+    # Set the type of noise
+    def set_noise(noise_type):
+        match noise_type.lower():
+            case "gaussian":
+                self.noise = GaussianNoise(size)
+            case "uniform":
+                self.noise = UniformNoise(size)
+            case "laplacian":
+                self.noise = LaplacianNoise(size)
+            case "randomize":
+                self.noise = RandomizeData(size)
+            case _:  # Default to randomize
+                self.noise = RandomizeData(size)
+
+        return
+
+    # Set the number of iterations
+    def set_iterations(iterations):
+        self.iterations = iterations
 
 # Baseline specific configuration parameters
 class BaselineConfig(Config):
