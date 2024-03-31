@@ -1,4 +1,5 @@
 import ray
+import sys
 from ray.rllib.evaluation import RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
 import supersuit as ss
@@ -42,7 +43,23 @@ if __name__ == "__main__":
     env = env_creator({})
     register_env("nepiada", env_creator)
 
+    # Get arguments from command line
+    seed = int(sys.argv[1])
+    truthful = int(sys.argv[2])
+    adversarial = int(sys.argv[3])
+    width = int(sys.argv[4])
+    height = int(sys.argv[5])
+    radius = int(sys.argv[6])
+    noise_type = sys.argv[7]
+    iterations = int(sys.argv[8])
+
+    # Modify the DQN config instance
     config = DQNConfig()
+    config.set_seed(seed)
+    config.set_agents(truthful, adversarial, width, height)
+    config.set_observation_radius(radius)
+    config.set_noise(noise_type)
+    config.set_iterations(iterations)
 
     replay_config = {
             "type": "MultiAgentPrioritizedReplayBuffer",
@@ -61,50 +78,49 @@ if __name__ == "__main__":
     config = config.callbacks(NepiadaCallbacks)
 
     ### TRAINING #####
-    algo = DQN(config=config)
-    best_reward_mean = -100000000
-    iterations_since_last_checkpoint = 0
-    name_of_experiment = "DQN_Mar15_MA_LocalRewardDELTA_TARNORM_LR00005_Gamma05_6A3T_1"
-    for i in range(100000):
-        result = algo.train()
-        print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
-        iterations_since_last_checkpoint += 1
-        if result["episode_reward_mean"] > best_reward_mean:
-            print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
-            best_reward_mean = result["episode_reward_mean"]
-            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_" + str(result["episode_reward_mean"]))
-            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
-            iterations_since_last_checkpoint = 0
-        elif iterations_since_last_checkpoint > 50:
-            print("Iterations since last checkpoint exceeded threshold | Saving checkpoint...")
-            checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_TOCHECK_" + str(result["episode_reward_mean"]))
-            print("Checkpoint saved at: ", checkpoint.checkpoint.path)
-            iterations_since_last_checkpoint = 0
-
-    stop = {"episodes_total": 60000}
-    tune.Tuner(
-        "DQN",
-        run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
-        param_space=config
-    ).fit()
-
-    ### EVALUATION ####
-
     # algo = DQN(config=config)
-    # algo.restore("C:/Users/thano/ray_results/DQN_Mar14_MA_LocalRewardDELTA_TARNORM_LR00005_Gamma05_4A2T_1/4542_199.03627875204452")
-    
-    # test_env_config = Config()
-    # test_env = nepiada.parallel_env(config=test_env_config)
+    # best_reward_mean = -100000000
+    # iterations_since_last_checkpoint = 0
+    # name_of_experiment = "DQN_Mar15_MA_LocalRewardDELTA_TARNORM_LR00005_Gamma05_6A3T_1"
+    # for i in range(100000):
+    #     result = algo.train()
+    #     print(f"Training iteration: {str(i)} | Reward mean: {str(result['episode_reward_mean'])}")
+    #     iterations_since_last_checkpoint += 1
+    #     if result["episode_reward_mean"] > best_reward_mean:
+    #         print(f"New best reward mean: {str(result['episode_reward_mean'])} | Previous best: {str(best_reward_mean)}")
+    #         best_reward_mean = result["episode_reward_mean"]
+    #         checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_" + str(result["episode_reward_mean"]))
+    #         print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+    #         iterations_since_last_checkpoint = 0
+    #     elif iterations_since_last_checkpoint > 50:
+    #         print("Iterations since last checkpoint exceeded threshold | Saving checkpoint...")
+    #         checkpoint = algo.save(checkpoint_dir="C:/Users/thano/ray_results/" + name_of_experiment + "/" + str(i) + "_TOCHECK_" + str(result["episode_reward_mean"]))
+    #         print("Checkpoint saved at: ", checkpoint.checkpoint.path)
+    #         iterations_since_last_checkpoint = 0
 
-    # observations, infos = test_env.reset()
-    # while test_env.agents:
-    #     actions = {}
-    #     for curr_agent_name in test_env.agents:
-    #         actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
-    #     # print(actions)
-    #     observations, rewards, terminations, truncations, infos = test_env.step(actions)
-    #     test_env.render()
-    # test_env.close()
+    # stop = {"episodes_total": 60000}
+    # tune.Tuner(
+    #     "DQN",
+    #     run_config=air.RunConfig(stop=stop, checkpoint_config=train.CheckpointConfig(checkpoint_frequency=50)),
+    #     param_space=config
+    # ).fit()
+
+    #### EVALUATION ####
+    algo = DQN(config=config)
+    algo.restore("D:/Hetav_Documents/UofT/Academic_Planning/ECE_496/Capstone-Project/src/nepiada/checkpoint/4542_199.03627875204452")
+    
+    test_env_config = Config()
+    test_env = nepiada.parallel_env(config=test_env_config)
+
+    observations, infos = test_env.reset()
+    while test_env.agents:
+        actions = {}
+        for curr_agent_name in test_env.agents:
+            actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
+        # print(actions)
+        observations, rewards, terminations, truncations, infos = test_env.step(actions)
+        test_env.render()
+    test_env.close()
 
     # algo = DQN(config=test_config)
     # algo.restore("C:/Users/thano/ray_results/DQN_2024-02-02_14-29-18/DQN_nepiada_5c7b1_00000_0_num_atoms=1_2024-02-02_14-29-19/checkpoint_000005")
