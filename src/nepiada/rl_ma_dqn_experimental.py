@@ -1,5 +1,6 @@
 import ray
 import sys
+import numpy as np
 from ray.rllib.evaluation import RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
 import supersuit as ss
@@ -29,6 +30,51 @@ class NepiadaCallbacks(DefaultCallbacks):
         # curr_timestep = worker.policy_map["parameter_sharing"].get_exploration_state()["last_timestep"]
         # agent_epsilons += f"{str(curr_epsilon)} | {str(curr_timestep)} || "
         print(f"DQN Rollout | Epsilons: {agent_epsilons}")
+
+def get_convergence_score(agent_list, env_config):
+    # Get the global convergence score
+    scores = {}
+    target_x = env_config.size / 2
+    target_y = env_config.size / 2
+    global_arrangement_vector = np.array([0.0, 0.0])
+    for agent_name, agent_instance in agent_list.items():
+        agent = agent_instance["agent_instance"]
+        global_arrangement_vector += np.array(
+            [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+        )
+
+    global_arrangement_vector = np.divide(
+        global_arrangement_vector, len(agent_list)
+    )
+    global_arrangement_reward = np.sqrt(
+        global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2
+    )
+
+    # Get the local convergence score
+    for agent_name, agent_instance in agent_list.items():
+        agent = agent_instance["agent_instance"]
+        agent_x = agent.p_pos[0]
+        agent_y = agent.p_pos[1]
+        deviation_from_arrangement = 0
+        for neighbour_name, ideal_distance in agent.target_neighbour.items():
+            neighbour = agent_list[neighbour_name]["agent_instance"]
+            neighbour_x = neighbour.p_pos[0]
+            neighbour_y = neighbour.p_pos[1]
+            ideal_x = ideal_distance[0]
+            ideal_y = ideal_distance[1]
+
+            deviation_from_arrangement += np.sqrt(
+                (neighbour_x - agent_x - ideal_x) ** 2
+                + (neighbour_y - agent_y - ideal_y) ** 2
+            )
+
+        scores[agent_name] = -(env_config.local_reward_weight * deviation_from_arrangement)
+
+    local_convergence_score = sum(scores.values()) / len(scores.values())
+    global_convergence_score = -(env_config.global_reward_weight * global_arrangement_reward)
+
+    return local_convergence_score, global_convergence_score
+    
 
 def env_creator(args, env_config = None):
     if (env_config == None):
@@ -126,7 +172,10 @@ if __name__ == "__main__":
             actions[curr_agent_name] = algo.compute_single_action(observation=observations[curr_agent_name], policy_id=curr_agent_name)
         # print(actions)
         observations, rewards, terminations, truncations, infos = test_env.step(actions)
-        test_env.render()
+        # test_env.render()
+
+    local_convergence_score, global_convergence_score = get_convergence_score(infos, env_config)
+    print(local_convergence_score, global_convergence_score)
     test_env.close()
 
     # algo = DQN(config=test_config)
@@ -140,4 +189,4 @@ if __name__ == "__main__":
     #     print(actions)
     #     observations, rewards, terminations, truncations, infos = env.step(actions)
     # env.close()
-    
+

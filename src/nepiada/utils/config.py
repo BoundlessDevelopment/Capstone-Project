@@ -31,7 +31,7 @@ class Config:
     seed: int = 0
     iterations: int = 50
     simulation_dir: str = "plots"
-    pass_agents_in_infos: bool = False
+    pass_agents_in_infos: bool = True
 
     # Agent related parameterss
     agent_grid_width: int = 3
@@ -60,7 +60,7 @@ class Config:
     }
     empty_cell: int = -1
     global_reward_weight: int = 1
-    local_reward_weight: int = 1
+    local_reward_weight: int = 0.2
     D: int = 1
     # screen_height: int = 400
     # screen_width: int = 400

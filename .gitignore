@@ -16,6 +16,9 @@ plots/
 # Text Files
 *.txt
 
+# CSV files
+*.csv
+
 # Distribution / packaging
 .Python
 build/

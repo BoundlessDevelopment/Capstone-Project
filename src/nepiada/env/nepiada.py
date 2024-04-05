@@ -28,9 +28,6 @@ def parallel_env(config: Config):
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
-    print("Received: ", type(config))
-    print(config)
-
     # Set the random seed
     np.random.seed(config.seed)
     

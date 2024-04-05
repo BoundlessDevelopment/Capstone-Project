@@ -186,9 +186,12 @@ def get_convergence_score(agent_list, env_config):
                 + (neighbour_y - agent_y - ideal_y) ** 2
             )
 
-        scores[agent_name] = -((env_config.global_reward_weight * global_arrangement_reward) + (env_config.local_reward_weight * deviation_from_arrangement))  
+        scores[agent_name] = -(env_config.local_reward_weight * deviation_from_arrangement)
 
-    return sum(scores.values())
+    local_convergence_score = sum(scores.values()) / len(scores.values())
+    global_convergence_score = -(env_config.global_reward_weight * global_arrangement_reward)
+
+    return local_convergence_score, global_convergence_score
 
 if __name__ == "__main__":
     # Get arguments from command line
@@ -203,5 +206,5 @@ if __name__ == "__main__":
 
     results, agents, env_config, env = main(seed, truthful, adversarial, width, height, radius, noise_type, iterations)
 
-    convergence_score = get_convergence_score(results[-1]["infos"], env_config)
-    print("Convergence score", convergence_score)
+    local_convergence_score, global_convergence_score = get_convergence_score(results[-1]["infos"], env_config)
+    print(local_convergence_score, global_convergence_score)
