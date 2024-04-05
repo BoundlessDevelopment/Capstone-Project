@@ -28,6 +28,9 @@ def parallel_env(config: Config):
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
+    print("Received: ", type(config))
+    print(config)
+
     # Set the random seed
     np.random.seed(config.seed)
     
@@ -123,7 +126,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            self.world.graph.render_graph(type="obs")
+            # self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):

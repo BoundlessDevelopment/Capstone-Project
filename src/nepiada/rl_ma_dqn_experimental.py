@@ -30,8 +30,12 @@ class NepiadaCallbacks(DefaultCallbacks):
         # agent_epsilons += f"{str(curr_epsilon)} | {str(curr_timestep)} || "
         print(f"DQN Rollout | Epsilons: {agent_epsilons}")
 
-def env_creator(args):
-    nepiada_config = Config()
+def env_creator(args, env_config = None):
+    if (env_config == None):
+        nepiada_config = Config()
+    else:
+        nepiada_config = env_config
+
     env = nepiada.parallel_env(config=nepiada_config)
     # env = ss.dtype_v0(env, "float32")
     return ParallelPettingZooEnv(env)
@@ -39,9 +43,6 @@ def env_creator(args):
 
 if __name__ == "__main__":
     ray.init()
-
-    env = env_creator({})
-    register_env("nepiada", env_creator)
 
     # Get arguments from command line
     seed = int(sys.argv[1])
@@ -53,13 +54,19 @@ if __name__ == "__main__":
     noise_type = sys.argv[7]
     iterations = int(sys.argv[8])
 
+    # Make the config file
+    env_config = Config()
+    env_config.set_seed(seed)
+    env_config.set_agents(truthful, adversarial, width, height)
+    env_config.set_observation_radius(radius)
+    env_config.set_noise(noise_type)
+    env_config.set_iterations(iterations)
+
+    env = env_creator({}, env_config)
+    register_env("nepiada", env_creator)
+
     # Modify the DQN config instance
     config = DQNConfig()
-    config.set_seed(seed)
-    config.set_agents(truthful, adversarial, width, height)
-    config.set_observation_radius(radius)
-    config.set_noise(noise_type)
-    config.set_iterations(iterations)
 
     replay_config = {
             "type": "MultiAgentPrioritizedReplayBuffer",
@@ -70,7 +77,7 @@ if __name__ == "__main__":
         }
 
     config = config.training(replay_buffer_config=replay_config, num_atoms=1, gamma=0.5, lr=0.0005)
-    config = config.resources(num_gpus=1)
+    config = config.resources(num_gpus=0)
     config = config.rollouts(num_rollout_workers=0, rollout_fragment_length=100, compress_observations=True)
     config = config.environment("nepiada")
     config = config.multi_agent(policies=env.get_agent_ids(), policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id))
@@ -109,7 +116,7 @@ if __name__ == "__main__":
     algo = DQN(config=config)
     algo.restore("D:/Hetav_Documents/UofT/Academic_Planning/ECE_496/Capstone-Project/src/nepiada/checkpoint/4542_199.03627875204452")
     
-    test_env_config = Config()
+    test_env_config = env_config
     test_env = nepiada.parallel_env(config=test_env_config)
 
     observations, infos = test_env.reset()

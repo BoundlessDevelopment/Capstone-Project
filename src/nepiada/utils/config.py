@@ -106,18 +106,17 @@ class Config:
 
     # Set the type of noise
     def set_noise(self, noise_type):
-        match noise_type.lower():
-            case "gaussian":
-                self.noise = GaussianNoise(self.seed)
-            case "uniform":
-                self.noise = UniformNoise(self.seed)
-            case "laplacian":
-                self.noise = LaplacianNoise(self.seed)
-            case "randomize":
-                self.noise = RandomizeData(self.size, self.seed)
-            case _:  # Default to randomize
-                self.noise = RandomizeData(self.size, self.seed)
-
+        if noise_type.lower() == "gaussian":
+            self.noise = GaussianNoise(self.seed)
+        elif noise_type.lower() == "uniform":
+            self.noise = UniformNoise(self.seed)
+        elif noise_type.lower() == "laplacian":
+            self.noise = LaplacianNoise(self.seed)
+        elif noise_type.lower() == "randomize":
+            self.noise = RandomizeData(self.size, self.seed)
+        else:
+            self.noise = RandomizeData(self.size, self.seed)  # Default to randomize
+            
         return
 
     # Set the number of iterations

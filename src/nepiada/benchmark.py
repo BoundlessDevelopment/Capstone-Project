@@ -11,8 +11,8 @@ iterations = [50]
 logs = 0
 
 # Delete a file named convergence_metrics.txt if it exists
-if os.path.exists("convergence_metrics.txt"):
-    os.remove("convergence_metrics.txt")
+if os.path.exists("convergence_metrics.csv"):
+    os.remove("convergence_metrics.csv")
 
 # Get all the requirements
 # subprocess.run(["python3", "-m", "pip", "install -r", "requirements.txt"])
@@ -37,8 +37,8 @@ for seed in range(1, number_of_runs + 1):
                     score = lines[-1].strip()
 
                 # Append this score to a file named convergence_metrics.txt
-                with open("convergence_metrics.txt", "a") as f:
-                    f.write(f"baseline {seed} 2 4 3 2 {iteration} {noise} {radius} {score}\n")
+                with open("convergence_metrics.csv", "a") as f:
+                    f.write(f"baseline, {seed}, 2, 4, 3, 2, {iteration}, {noise}, {radius}, {score}\n")
 
                 # Delete the baseline.txt file if logs is set to 0
                 if logs == 0:

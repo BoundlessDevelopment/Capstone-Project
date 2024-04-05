@@ -1,0 +1,8 @@
+baseline, 1, 2, 4, 3, 2, 50, gaussian, 2, Convergence score -36.382291803107464
+baseline, 1, 2, 4, 3, 2, 50, gaussian, 16, Convergence score -36.382291803107464
+baseline, 1, 2, 4, 3, 2, 50, randomize, 2, Convergence score -25.313708498984763
+baseline, 1, 2, 4, 3, 2, 50, randomize, 16, Convergence score -25.313708498984763
+baseline, 2, 2, 4, 3, 2, 50, gaussian, 2, Convergence score -13.848857801796104
+baseline, 2, 2, 4, 3, 2, 50, gaussian, 16, Convergence score -13.848857801796104
+baseline, 2, 2, 4, 3, 2, 50, randomize, 2, Convergence score -21.31370849898476
+baseline, 2, 2, 4, 3, 2, 50, randomize, 16, Convergence score -21.31370849898476
