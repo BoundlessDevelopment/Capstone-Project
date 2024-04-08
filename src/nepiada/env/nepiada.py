@@ -27,7 +27,7 @@ def parallel_env(config: Config):
     only supported in AEC environments.
     """
     internal_render_mode = "human"
-    env = raw_env(render_mode=internal_render_mode, config=config)
+    env = raw_env(render_mode=None, config=config)
     env = parallel_to_aec(env)
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
@@ -243,7 +243,7 @@ class nepiada(ParallelEnv):
             for i in range(len(curr_agent.truthful_weights)):
                 if curr_agent.truthful_weights[i] == 0:
                     curr_agent.truthful_weights[i] = 0.1
-            print(curr_agent.truthful_weights)
+            #print(curr_agent.truthful_weights)
         return incoming_all_messages
 
     def initialize_beliefs(self):

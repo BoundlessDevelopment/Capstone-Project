@@ -1,72 +1,97 @@
 import numpy as np
 import sys
-sys.path.append("..") # Adds higher directory to python modules path.
+import time
+from concurrent.futures import ProcessPoolExecutor
+sys.path.append("..")  # Adds higher directory to python modules path.
 
 # Import the main function from the simulation script
 from baseline import main as baseline_run
 import env.nepiada as nepiada
 
 class SimulationTester:
-    def __init__(self, included_data=None):
+    def __init__(self, included_data=None, k=1):
         """
-        Initialize the SimulationTester with specified data components to include.
+        Initialize the SimulationTester with specified data components to include and number of simulations to run.
         :param included_data: List of strings indicating which data components to include in results.
+        :param k: Number of simulations to run.
         """
+        self.k = k
         if included_data is None:
-            self.included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
+            self.included_data = ["rewards"]
         else:
             self.included_data = included_data
+        self.all_results = []
+        self.run_times = []
+
+    def single_run(self):
+        """
+        A single run of the simulation.
+        """
+        start_time = time.time()
+        results, agents, config, env = baseline_run(included_data=self.included_data)
+        end_time = time.time()
+        return results, end_time - start_time
 
     def run_simulation(self):
         """
-        Run the simulation and store the results.
+        Run the simulation 'k' times in parallel and store the results and time taken for each run.
         """
-        self.results, self.agents, self.config, self.env = baseline_run(included_data=self.included_data)
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit(self.single_run) for _ in range(self.k)]
+            for future in futures:
+                results, run_time = future.result()
+                self.all_results.append(results)
+                self.run_times.append(run_time)
 
     def calculate_convergence_score(self):
         """
-        This function calculates the convergence score based on the average reward acrooss all agent 
-        in the last iteration of the algorithm.
-
-        The reward of the agents in turn are calculated using two metrics: global arrangement 
-        and local arrangement costs, which are described in Pavel and Dian's paper.
-
-        IMPORTANT: An ideal / globally optimal NE will have a score of zero. Lower the score the closer 
-        it is to globally optimal NE.
+        Calculate the convergence score for each simulation run.
         """
+        scores = []
+        for results in self.all_results:
+            if not results:
+                scores.append(-1)
+                continue
 
-        if not hasattr(self, 'results'):
-            print("Cannot compute convergence score before a simulation is run. Run the simulation first.")
-            return -1
+            net_cost = 0.0
+            last_iteration = results[-1]
+            num_agents = 0
+            for agent, reward in last_iteration["rewards"].items():
+                net_cost += reward
+                num_agents += 1
 
-        # Get the cost from the latest reward functions
-        net_cost = 0.0
-        last_iteration = self.results[self.config.iterations - 1]
-        num_agents = 0
-        for agent, reward in last_iteration["rewards"].items():
-            net_cost += reward
-            num_agents += 1
+            score = -1 * (net_cost / num_agents) if num_agents > 0 else -1
+            scores.append(score)
 
-        convergence_score = -1 * (net_cost / num_agents)
-        assert convergence_score >= 0, "Convergence score cannot be negative"
-
-        return convergence_score
+        return scores
 
     def print_results(self):
         """
-        Print the stored simulation results.
+        Print the stored simulation results, the convergence scores, and the timing information.
         """
-        if not hasattr(self, 'results'):
-            print("No results to display. Run the simulation first.")
-            return
+        total_score = 0
+        total_time = 0
 
-        for step_result in self.results:
-            print(step_result)
+        scores = self.calculate_convergence_score()
+        for i, (score, run_time) in enumerate(zip(scores, self.run_times)):
+            print(f"\nConvergence score for Simulation {i+1}: {score}")
+            print(f"Time taken for Simulation {i+1}: {run_time} seconds")
+            total_score += score
+            total_time += run_time
 
-        print("\nCalculating score, ideal NE is (0): ", self.calculate_convergence_score())
+        average_score = total_score / len(scores) if scores else 0
+        average_time = total_time / self.k
+        print(f"\nAverage Convergence Score over {self.k} runs: {average_score}")
+        print(f"Average Time over {self.k} runs: {average_time} seconds")
 
 # Example usage
 if __name__ == "__main__":
-    tester = SimulationTester()
-    tester.run_simulation()
-    tester.print_results()
+    start_time = time.time()  # Start timer
+
+    tester = SimulationTester(k=2)  # Initialize SimulationTester to run 2 simulations
+    tester.run_simulation()        # Run the simulations
+    tester.print_results()         # Print the results
+
+    end_time = time.time()  # End timer
+    total_testing_time = end_time - start_time
+    print(f"\nTotal Testing Time: {total_testing_time} seconds")
