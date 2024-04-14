@@ -18,6 +18,8 @@ from collections import OrderedDict, defaultdict
 import os
 import matplotlib.pyplot as plt
 
+from utils.online_k import *
+
 TYPE_CHECK = True
 
 def parallel_env(config: Config):
@@ -26,14 +28,20 @@ def parallel_env(config: Config):
     Converts to AEC API then back to Parallel API since the wrappers are
     only supported in AEC environments.
     """
+    # Set the random seed
+    np.random.seed(config.seed)
+    
     internal_render_mode = "human"
     env = raw_env(render_mode=internal_render_mode, config=config)
     env = parallel_to_aec(env)
+    
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
+    
     # Provides a wide vareity of helpful user errors
     env = wrappers.OrderEnforcingWrapper(env)
     env = aec_to_parallel(env)
+
     return env
 
 def raw_env(render_mode=None, config: Config = Config()):
@@ -115,7 +123,7 @@ class nepiada(ParallelEnv):
             )
             return
         elif self.render_mode == "human":
-            self.world.graph.render_graph(type="obs")
+            # self.world.graph.render_graph(type="obs")
             return
 
     def observe(self, agent_name):
@@ -136,6 +144,46 @@ class nepiada(ParallelEnv):
         # Before quiting write out the graphs for each trajectory
         self._dump_pos_graphs()
         pass
+
+    def strip_adversarial_info(
+                self,
+                incoming_messages,
+                trustworthy_agents,
+                curr_beliefs,
+                new_beliefs,
+                target_agent_name
+    ):
+        # Estimate the postion of the target agent based on the incomming messages from other agents
+        in_messages = []
+        for other_agent in incoming_messages:
+            if target_agent_name in incoming_messages[other_agent]:
+                message = incoming_messages[other_agent][target_agent_name]
+                
+                # Type check
+                if TYPE_CHECK and not isinstance(message, (np.ndarray, np.generic)):
+                    print("Found type: ", type(message))
+                    assert False, "The type of helpful belief is not a numpy array"
+
+                # Only append if the prediction for the 'other agent' is truthful or unknown
+                if (trustworthy_agents[other_agent] != 0.1):
+                    in_messages.append(message)
+
+        # If we received no information about the target agent we use the previous information
+        if len(in_messages) == 0:
+            new_beliefs[target_agent_name] = curr_beliefs[target_agent_name]
+
+            # Type check
+            if TYPE_CHECK and not isinstance(curr_beliefs[target_agent_name], (np.ndarray, np.generic)):
+                print("Found type: ", type(curr_beliefs[target_agent_name]))
+                assert False, "The type of net_estimate when no info is available is not a numpy array"
+
+        else:
+            # Average all the incoming messages
+            x_pos_mean = sum([message[0] for message in in_messages]) / len(in_messages)
+            y_pos_mean = sum([message[1] for message in in_messages]) / len(in_messages)
+            new_beliefs[target_agent_name] = np.array([x_pos_mean, y_pos_mean], dtype=np.float32)
+
+        return
 
     def strip_extreme_values_and_update_beliefs(
         self, incoming_messages, curr_beliefs, new_beliefs, target_agent_name
@@ -213,7 +261,7 @@ class nepiada(ParallelEnv):
                 curr_beliefs[target_agent_name][1] + y_pos_delta,
             ], dtype=np.float32)
 
-    def get_observations(self, incoming_messages):
+    def get_observations(self, incoming_messages, trustworthy_agents):
         """
         The observation space is an OrderedDict where the key is the agent_name and the value is a dictionary of two types of observations:
 
@@ -221,6 +269,9 @@ class nepiada(ParallelEnv):
         - beliefs: The belief each agent has about every other agents position
             - This is made by first getting info about observable agents
             - Then for the rest of the agents we estimate using the communicated messages
+            - The communicated messages are filtered initially using D-pruning and later using k-means clustering
+            - The D-pruning aims to filter the extreme values
+            - The k-means clustering is an unsupervised algorithm that predicts whether the agent is truthful or adversarial
         """
         beliefs = {agent: None for agent in self.agents}
 
@@ -235,7 +286,10 @@ class nepiada(ParallelEnv):
                     agent_beliefs[observed_agent_name] = None  # Cannot be observed
             beliefs[agent_name] = agent_beliefs
 
-        # Estimate the position of the remaining agents using comm graph and extrema pruning
+        # Estimate the position of the remaining agents using comm graph
+        # Filteration is done in a dynamic fashion:
+        #     Initially we rely on D-pruning to reject extreme values as in Gadjov D. and Pavel L.
+        #     Then after a certain iterations we switch to k-means clustering that predicts whether an agent is adversarial or truthful
         for agent_name in self.agents:
             agent = self.world.get_agent(agent_name)
 
@@ -245,12 +299,23 @@ class nepiada(ParallelEnv):
                     continue
 
                 if incoming_messages[agent_name] is not None:
-                    self.strip_extreme_values_and_update_beliefs(
-                        incoming_messages[agent_name],
-                        agent.beliefs,
-                        beliefs[agent_name],
-                        other_agent_name
-                    )
+                    # If k-means has made a stable prediction
+                    if trustworthy_agents[agent_name] is not None and self.config.k_means_pruning:
+                        self.strip_adversarial_info(
+                            incoming_messages[agent_name],
+                            trustworthy_agents[agent_name],
+                            agent.beliefs,
+                            beliefs[agent_name],
+                            other_agent_name
+                        )
+                    # Else we rely on D-pruning
+                    else:
+                        self.strip_extreme_values_and_update_beliefs(
+                            incoming_messages[agent_name],
+                            agent.beliefs,
+                            beliefs[agent_name],
+                            other_agent_name
+                        )
                 else:
                     assert False, "Logically, we should never reach here"
                     print("Agent not within communication or observation radius!")
@@ -344,7 +409,91 @@ class nepiada(ParallelEnv):
 
             incoming_all_messages[agent_name] = incoming_agent_messages
 
-        return incoming_all_messages
+        # Populate the incoming messages in the agents last_messages buffer - O(n^3)
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            for talking_agent in self.agents:
+                incoming_messages = []
+
+                for target_agent in self.agents:
+                    # Check if the keys exist in the nested dictionary
+                    if agent_name in incoming_all_messages and \
+                    target_agent in incoming_all_messages[agent_name] and \
+                    talking_agent in incoming_all_messages[agent_name][target_agent]:
+
+                        message = incoming_all_messages[agent_name][target_agent][talking_agent]
+                    else:
+                        # Handle the case where the key doesn't exist
+                        # This could be a default value or a special indicator
+                        message = None  # or some default value
+
+                    incoming_messages.append(message)
+
+                # How many past messages we keep track of
+                past = self.config.k_means_past_buffer_size
+                
+                # If we don't have the last messages for this agent pad the array with None
+                agents = len(self.agents)
+                if(talking_agent not in curr_agent.last_messages):
+                    curr_agent.last_messages[talking_agent] = [None]*(agents*(past-1))
+
+                # If the last messages array exist append it to this array
+                curr_agent.last_messages[talking_agent].extend(incoming_messages)
+
+                # If the size exceeds the past buffer size pop the oldest message
+                # This is like a sliding window over incoming messages from the talking agent
+                if(len(curr_agent.last_messages[talking_agent]) > agents*past):
+                    for i in range(agents):
+                        curr_agent.last_messages[talking_agent].pop(0)
+
+                # Sanity check for size of last messages
+                assert len(curr_agent.last_messages[talking_agent]) <= agents*past, "The last message size exceeds past buffer size"
+
+        # Generate truthful weights based on k-means classification
+        trustworthy_agents = {}
+        for agent_name in self.agents:
+            curr_agent = self.world.get_agent(agent_name)
+            curr_agent.truthful_weights = {}
+            for target_agent in self.agents:
+                # The messages received by the current agent from target_agent in the past 'k_means_past_buffer_size' steps
+                list_of_past_messages = curr_agent.last_messages[target_agent]
+
+                # Number of total agents
+                total_agents = len(self.agents)
+
+                # Valid interval is true when:
+                # For the past 'k_means_past_buffer_size' steps, the target agent has sent messages with atleast one non-None value
+                # in each of the 'k_means_past_buffer_size' messages.
+                valid_intervals = all(any(x is not None for x in list_of_past_messages[i:i+total_agents]) for i in range(0, len(list_of_past_messages), total_agents))
+
+                if valid_intervals:
+                    data_point = np.array([calculate(list_of_past_messages, total_agents)])
+                    curr_agent.model.partial_fit(data_point.reshape(-1, 1))
+                    predicted_cluster = curr_agent.model.predict(data_point.reshape(-1, 1))[0]
+                    curr_agent.truthful_weights[target_agent] = predicted_cluster
+                else:
+                    curr_agent.truthful_weights[target_agent] = 0.5 #update with midpoint 0.5 when unsure
+            
+            if (all(prediction == 0.5 for prediction in curr_agent.truthful_weights)):
+                trustworthy_agents[agent_name] = None
+            else:
+                trustworthy_agents[agent_name] = curr_agent.truthful_weights
+
+            # Dump logs to generate plots
+            f = open("predictions.csv", "a")
+            sortedKeys = list(curr_agent.truthful_weights.keys())
+            sortedKeys.sort()
+            for key in sortedKeys:
+                value = curr_agent.truthful_weights[key]
+                data = str(value - 0.5) + ", "
+                f.write(data)
+            f.write("\n")
+            f.close()
+            
+            # print(curr_agent.truthful_weights)
+
+        return incoming_all_messages, trustworthy_agents
+
 
     def initialize_beliefs(self):
         """
@@ -468,11 +617,14 @@ class nepiada(ParallelEnv):
         # For incomming messages
         self.incoming_msgs = {agent: {} for agent in self.agents}
 
+        # For trustworthy info
+        trustworthy_agents = {agent: None for agent in self.agents}
+
         # Set all beliefs to random values
         self.initialize_beliefs()
 
         # The observation structure returned below are the coordinates of each agents that each agent can directly observe
-        self.observations = self.get_observations(self.incoming_msgs)
+        self.observations = self.get_observations(self.incoming_msgs, trustworthy_agents)
 
         # Store the minimum score seen so far, may or may not be used in rewards depending on the function in use.
         self.min_score = min(scores.values())
@@ -533,7 +685,7 @@ class nepiada(ParallelEnv):
         # For incomming messages
         self.incoming_msgs = {agent: {} for agent in self.agents}
 
-        incoming_all_messages = self.get_all_messages()
+        incoming_all_messages, trustworthy_agents = self.get_all_messages()
         for agent_name in self.agents: 
             self.incoming_msgs[agent_name] = incoming_all_messages[agent_name]
 
@@ -541,7 +693,7 @@ class nepiada(ParallelEnv):
         # if self.render_mode == "human":
         #     self.render()
 
-        self.observations = self.get_observations(self.incoming_msgs)
+        self.observations = self.get_observations(self.incoming_msgs, trustworthy_agents)
         return self.observations, self.rewards, terminations, truncations, self.infos
 
     def move_drones(self, actions):

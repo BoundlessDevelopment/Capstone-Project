@@ -1,5 +1,6 @@
 # Local imports
 import numpy as np
+import sys
 import env.nepiada as nepiada
 from utils.config import BaselineConfig
 import pygame
@@ -94,11 +95,17 @@ def step(agent_name, agent_instance, beliefs, env, config):
     min_action = min(action_costs, key=action_costs.get)
     return min_action
 
-def main(included_data=None):
+def main(seed, truthful, adversarial, width, height, radius, noise_type, iterations, included_data=None):
     if included_data is None:
         included_data = ["observations", "rewards", "terminations", "truncations", "infos"]
 
     env_config = BaselineConfig()
+    env_config.set_seed(seed)
+    env_config.set_agents(truthful, adversarial, width, height)
+    env_config.set_observation_radius(radius)
+    env_config.set_noise(noise_type)
+    env_config.set_iterations(iterations)
+
     env = nepiada.parallel_env(config=env_config)
     observations, infos = env.reset()
 
@@ -139,8 +146,65 @@ def main(included_data=None):
 
     env.close()
     pygame.quit()
-
+    
     return results, agents, env_config, env  # Return the collected results
 
+def get_convergence_score(agent_list, env_config):
+    # Get the global convergence score
+    scores = {}
+    target_x = env_config.size / 2
+    target_y = env_config.size / 2
+    global_arrangement_vector = np.array([0.0, 0.0])
+    for agent_name, agent_instance in agent_list.items():
+        agent = agent_instance["agent_instance"]
+        global_arrangement_vector += np.array(
+            [(agent.p_pos[0] - target_x), (target_y - agent.p_pos[1])]
+        )
+
+    global_arrangement_vector = np.divide(
+        global_arrangement_vector, len(agent_list)
+    )
+    global_arrangement_reward = np.sqrt(
+        global_arrangement_vector[0] ** 2 + global_arrangement_vector[1] ** 2
+    )
+
+    # Get the local convergence score
+    for agent_name, agent_instance in agent_list.items():
+        agent = agent_instance["agent_instance"]
+        agent_x = agent.p_pos[0]
+        agent_y = agent.p_pos[1]
+        deviation_from_arrangement = 0
+        for neighbour_name, ideal_distance in agent.target_neighbour.items():
+            neighbour = agent_list[neighbour_name]["agent_instance"]
+            neighbour_x = neighbour.p_pos[0]
+            neighbour_y = neighbour.p_pos[1]
+            ideal_x = ideal_distance[0]
+            ideal_y = ideal_distance[1]
+
+            deviation_from_arrangement += np.sqrt(
+                (neighbour_x - agent_x - ideal_x) ** 2
+                + (neighbour_y - agent_y - ideal_y) ** 2
+            )
+
+        scores[agent_name] = -(env_config.local_reward_weight * deviation_from_arrangement)
+
+    local_convergence_score = sum(scores.values()) / len(scores.values())
+    global_convergence_score = -(env_config.global_reward_weight * global_arrangement_reward)
+
+    return local_convergence_score, global_convergence_score
+
 if __name__ == "__main__":
-    main()
+    # Get arguments from command line
+    seed = int(sys.argv[1])
+    truthful = int(sys.argv[2])
+    adversarial = int(sys.argv[3])
+    width = int(sys.argv[4])
+    height = int(sys.argv[5])
+    radius = int(sys.argv[6])
+    noise_type = sys.argv[7]
+    iterations = int(sys.argv[8])
+
+    results, agents, env_config, env = main(seed, truthful, adversarial, width, height, radius, noise_type, iterations)
+
+    local_convergence_score, global_convergence_score = get_convergence_score(results[-1]["infos"], env_config)
+    print(local_convergence_score, global_convergence_score)
